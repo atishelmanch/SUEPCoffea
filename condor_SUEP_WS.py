@@ -11,6 +11,9 @@ import argparse
 
 import time
 
+# singularity shell -B ${PWD} /cvmfs/unpacked.cern.ch/registry.hub.docker.com/coffeateam/coffea-dask:latest
+# python3 condor_SUEP_WS.py --isMC=0 --era=2018 --infile=ETT_test_197.root --treename="tuplizer/ETTAnalyzerTree"
+
 parser = argparse.ArgumentParser("")
 parser.add_argument('--isMC', type=int, default=1, help="")
 parser.add_argument('--jobNum', type=int, default=1, help="")
@@ -19,6 +22,7 @@ parser.add_argument('--doSyst', type=int, default=1, help="")
 parser.add_argument('--infile', type=str, default=None, help="")
 parser.add_argument('--dataset', type=str, default="X", help="")
 parser.add_argument('--nevt', type=str, default=-1, help="")
+parser.add_argument('--treename', type=str, default="Events", help="")
 
 options = parser.parse_args()
 
@@ -93,7 +97,8 @@ f = uproot.recreate("tree_%s_WS.root" % str(options.jobNum))
 for instance in modules_era:
     output = run_uproot_job(
         {instance.sample: [options.infile]},
-        treename='Events',
+        # treename='Events',
+        treename=options.treename,
         processor_instance=instance,
         executor=futures_executor,
         executor_args={'workers': 10},
@@ -111,7 +116,8 @@ modules_gensum.append(GenSumWeight(isMC=options.isMC, era=int(options.era), do_s
 for instance in modules_gensum:
     output = run_uproot_job(
         {instance.sample: [options.infile]},
-        treename='Runs',
+        # treename='Runs',
+        treename=options.treename,
         processor_instance=instance,
         executor=futures_executor,
         executor_args={'workers': 10},

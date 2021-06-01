@@ -6,6 +6,7 @@ from coffea.hist import Hist, Bin, export1d
 from coffea.processor import ProcessorABC, LazyDataFrame, dict_accumulator
 from uproot3 import recreate
 import numpy as np
+import awkward as ak 
 
 class WSProducer(ProcessorABC):
     """
@@ -42,15 +43,43 @@ class WSProducer(ProcessorABC):
     def process(self, df, *args):
         output = self.accumulator.identity()
 
-        weight = self.weighting(df)
+        # weight = self.weighting(df)
 
         for h, hist in list(self.histograms.items()):
             for region in hist['region']:
+
+                # print("df:",df)
+                # print("df[hist['target']]:",df[hist['target']])
+                # print("With selection:")
+                # print(df[hist['target']][selec])
+
                 name = self.naming_schema(hist['name'], region)
                 selec = self.passbut(df, hist['target'], region)
+
+
+                # print("selec = ",selec)
+                # print("df[hist['target']]:",df[hist['target']])
+                # print("With selection:")
+                # values = df[hist['target']][selec]
+                # selectedValues = np.array(ak.to_list(df[hist['target']][selec]), dtype="O")
+                selectedValues = np.hstack(ak.to_list(df[hist['target']][selec])).flatten()
+                # selectedValues.flatten()
+                print("type:",type(selectedValues))
+                print("selectedValues:",selectedValues)
+                # print("values:",values)
+                # print("Selected:", np.array(ak.to_list(values), dtype="O"))
+                # ak.to_list(values), dtype="O"
+                # print("type:",type(df[hist['target']][selec]))
+                # print("to array:",np.asarray(df[hist['target']][selec]))
+                # print("to array:",df[hist['target']][selec].to_numpy())
+
                 output[name].fill(**{
-                    'weight': weight[selec],
-                    name: df[hist['target']][selec]#.flatten()
+                    # 'weight': weight[selec],
+                    name: selectedValues
+                    # name: df[hist['target']][selec]
+                    # name: df[hist['target']][selec].array().flatten()
+                    # name: df[hist['target']][selec]#.flatten()
+                    # name: df[hist['target']][selec].flatten()
                 })
 
         return output
@@ -64,289 +93,329 @@ class WSProducer(ProcessorABC):
 
 class SUEP_NTuple(WSProducer):
     histograms = {
-        'h_nCleaned_Cands': {
-            'target': 'nCleaned_Cands',
-            'name': 'nCleaned_Cands',  # name to write to histogram
-            'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-            'axis': {'label': 'nCleaned_Cands', 'n_or_arr': 500, 'lo': 0, 'hi': 500}
-        },
+
         'h_met_pt': {
-            'target': 'met_pt',
-            'name': 'met_pt',  # name to write to histogram
-            'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-            'axis': {'label': 'met_pt', 'n_or_arr': 150, 'lo': 0, 'hi': 1500}
+            'target': 'time',
+            'name': 'time',  # name to write to histogram
+            # 'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
+            'region': ['sevzero', 'sevthree', 'sevfour'],
+            'axis': {'label': 'time', 'n_or_arr': 120, 'lo': -150, 'hi': 150}
+            # 'axis': {'label': 'time'}
         },
-        'h_CaloMET_pt': {
-            'target': 'CaloMET_pt',
-            'name': 'CaloMET_pt',  # name to write to histogram
-            'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-            'axis': {'label': 'CaloMET_pt', 'n_or_arr': 150, 'lo': 0, 'hi': 1500}
-        },
-        #'h_npv': {
-        #    'target': 'npv',
-        #    'name': 'npv',  # name to write to histogram
-        #    'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-        #    'axis': {'label': 'npv', 'n_or_arr': 120, 'lo': 0, 'hi': 120}
-        #},
-        #'h_pu': {
-        #    'target': 'pu',
-        #    'name': 'pu',  # name to write to histogram
-        #    'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-        #    'axis': {'label': 'pu', 'n_or_arr': 120, 'lo': 0, 'hi': 120}
-        #},
-        #'h_rho': {
-        #    'target': 'rho',
-        #    'name': 'rho',  # name to write to histogram
-        #    'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-        #    'axis': {'label': 'rho', 'n_or_arr': 120, 'lo': 0, 'hi': 120}
-        #},
-        'h_SUEP_mult_pt': {
-            'target': 'SUEP_mult_pt',
-            'name': 'SUEP_mult_pt',  # name to write to histogram
-            'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-            'axis': {'label': 'SUEP_mult_pt', 'n_or_arr': 100, 'lo': 0, 'hi': 2000}
-        },
-        'h_SUEP_mult_m': {
-            'target': 'SUEP_mult_m',
-            'name': 'SUEP_mult_m',  # name to write to histogram
-            'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-            'axis': {'label': 'SUEP_mult_m', 'n_or_arr': 100, 'lo': 0, 'hi': 4000}
-        },
-        'h_SUEP_mult_eta': {
-            'target': 'SUEP_mult_eta',
-            'name': 'SUEP_mult_eta',  # name to write to histogram
-            'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-            'axis': {'label': 'SUEP_mult_eta', 'n_or_arr': 100, 'lo': -5, 'hi': 5}
-        },
-        'h_SUEP_mult_phi': {
-            'target': 'SUEP_mult_phi',
-            'name': 'SUEP_mult_phi',  # name to write to histogram
-            'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-            'axis': {'label': 'SUEP_mult_phi', 'n_or_arr': 100, 'lo': 0, 'hi': 6.5}
-        },
-        'h_SUEP_mult_nconst': {
-            'target': 'SUEP_mult_nconst',
-            'name': 'SUEP_mult_nconst',  # name to write to histogram
-            'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-            'axis': {'label': 'SUEP_mult_nconst', 'n_or_arr': 800, 'lo': 0, 'hi': 800}
-        },
-        'h_SUEP_mult_spher': {
-            'target': 'SUEP_mult_spher',
-            'name': 'SUEP_mult_spher',  # name to write to histogram
-            'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-            'axis': {'label': 'SUEP_mult_spher', 'n_or_arr': 100, 'lo': 0, 'hi': 1}
-        },
-        'h_SUEP_mult_aplan': {
-            'target': 'SUEP_mult_aplan',
-            'name': 'SUEP_mult_aplan',  # name to write to histogram
-            'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-            'axis': {'label': 'SUEP_mult_aplan', 'n_or_arr': 100, 'lo': 0, 'hi': 1}
-        },
-        'h_SUEP_mult_FW2M': {
-            'target': 'SUEP_mult_FW2M',
-            'name': 'SUEP_mult_FW2M',  # name to write to histogram
-            'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-            'axis': {'label': 'SUEP_mult_FW2M', 'n_or_arr': 100, 'lo': 0, 'hi': 1}
-        },
-        'h_SUEP_mult_D': {
-            'target': 'SUEP_mult_D',
-            'name': 'SUEP_mult_D',  # name to write to histogram
-            'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-            'axis': {'label': 'SUEP_mult_D', 'n_or_arr': 100, 'lo': 0, 'hi': 1}
-        },
-        'h_SUEP_mult_pt_ave': {
-            'target': 'SUEP_mult_pt_ave',
-            'name': 'SUEP_mult_pt_ave',  # name to write to histogram
-            'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-            'axis': {'label': 'SUEP_mult_pt_ave', 'n_or_arr': 100, 'lo': 0, 'hi': 25}
-        },
-        'h_SUEP_mult_girth': {
-            'target': 'SUEP_mult_girth',
-            'name': 'SUEP_mult_girth',  # name to write to histogram
-            'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-            'axis': {'label': 'SUEP_mult_girth', 'n_or_arr': 30, 'lo': 0, 'hi': 3}
-        },
-        'h_SUEP_pt_pt': {
-            'target': 'SUEP_pt_pt',
-            'name': 'SUEP_pt_pt',  # name to write to histogram
-            'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-            'axis': {'label': 'SUEP_pt_pt', 'n_or_arr': 100, 'lo': 0, 'hi': 2000}
-        },
-        'h_SUEP_pt_m': {
-            'target': 'SUEP_pt_m',
-            'name': 'SUEP_pt_m',  # name to write to histogram
-            'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-            'axis': {'label': 'SUEP_pt_m', 'n_or_arr': 150, 'lo': 0, 'hi': 4000}
-        },
-        'h_SUEP_pt_eta': {
-            'target': 'SUEP_pt_eta',
-            'name': 'SUEP_pt_eta',  # name to write to histogram
-            'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-            'axis': {'label': 'SUEP_pt_eta', 'n_or_arr': 100, 'lo': -5, 'hi': 5}
-        },
-        'h_SUEP_pt_phi': {
-            'target': 'SUEP_pt_phi',
-            'name': 'SUEP_pt_phi',  # name to write to histogram
-            'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-            'axis': {'label': 'SUEP_pt_phi', 'n_or_arr': 100, 'lo': 0, 'hi': 6.5}
-        },
-        'h_SUEP_pt_nconst': {
-            'target': 'SUEP_pt_nconst',
-            'name': 'SUEP_pt_nconst',  # name to write to histogram
-            'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-            'axis': {'label': 'SUEP_pt_nconst', 'n_or_arr': 800, 'lo': 0, 'hi': 800}
-        },
-        'h_SUEP_pt_spher': {
-            'target': 'SUEP_pt_spher',
-            'name': 'SUEP_pt_spher',  # name to write to histogram
-            'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-            'axis': {'label': 'SUEP_pt_spher', 'n_or_arr': 100, 'lo': 0, 'hi': 1}
-        },
-        'h_SUEP_pt_aplan': {
-            'target': 'SUEP_pt_aplan',
-            'name': 'SUEP_pt_aplan',  # name to write to histogram
-            'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-            'axis': {'label': 'SUEP_pt_aplan', 'n_or_arr': 100, 'lo': 0, 'hi': 1}
-        },
-        'h_SUEP_pt_FW2M': {
-            'target': 'SUEP_pt_FW2M',
-            'name': 'SUEP_pt_FW2M',  # name to write to histogram
-            'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-            'axis': {'label': 'SUEP_pt_FW2M', 'n_or_arr': 100, 'lo': 0, 'hi': 1}
-        },
-        'h_SUEP_pt_D': {
-            'target': 'SUEP_pt_D',
-            'name': 'SUEP_pt_D',  # name to write to histogram
-            'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-            'axis': {'label': 'SUEP_pt_D', 'n_or_arr': 100, 'lo': 0, 'hi': 1}
-        },
-        'h_SUEP_pt_pt_ave': {
-            'target': 'SUEP_pt_pt_ave',
-            'name': 'SUEP_pt_pt_ave',  # name to write to histogram
-            'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-            'axis': {'label': 'SUEP_pt_pt_ave', 'n_or_arr': 100, 'lo': 0, 'hi': 25}
-        },
-        'h_SUEP_pt_girth': {
-            'target': 'SUEP_pt_girth',
-            'name': 'SUEP_pt_girth',  # name to write to histogram
-            'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-            'axis': {'label': 'SUEP_pt_girth', 'n_or_arr': 30, 'lo': 0, 'hi': 3}
-        },
-        'h_SUEP_isr_pt': {
-            'target': 'SUEP_isr_pt',
-            'name': 'SUEP_isr_pt',  # name to write to histogram
-            'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-            'axis': {'label': 'SUEP_isr_pt', 'n_or_arr': 100, 'lo': 0, 'hi': 2000}
-        },  
-        'h_SUEP_isr_m': {
-            'target': 'SUEP_isr_m',
-            'name': 'SUEP_isr_m',  # name to write to histogram
-            'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-            'axis': {'label': 'SUEP_isr_m', 'n_or_arr': 150, 'lo': 0, 'hi': 4000}
-        },
-        'h_SUEP_isr_eta': {
-            'target': 'SUEP_isr_eta',
-            'name': 'SUEP_isr_eta',  # name to write to histogram
-            'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-            'axis': {'label': 'SUEP_isr_eta', 'n_or_arr': 100, 'lo': -5, 'hi': 5}
-        },
-        'h_SUEP_isr_phi': {
-            'target': 'SUEP_isr_phi',
-            'name': 'SUEP_isr_phi',  # name to write to histogram
-            'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-            'axis': {'label': 'SUEP_isr_phi', 'n_or_arr': 200, 'lo': -6.5, 'hi': 6.5}
-        },
-        'h_SUEP_isr_nconst': {
-            'target': 'SUEP_isr_nconst',
-            'name': 'SUEP_isr_nconst',  # name to write to histogram
-            'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-            'axis': {'label': 'SUEP_isr_nconst', 'n_or_arr': 800, 'lo': 0, 'hi': 800}
-        },
-        'h_SUEP_isr_spher': {
-            'target': 'SUEP_isr_spher',
-            'name': 'SUEP_isr_spher',  # name to write to histogram
-            'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-            'axis': {'label': 'SUEP_isr_spher', 'n_or_arr': 100, 'lo': 0, 'hi': 1}
-        },
-        'h_SUEP_isr_aplan': {
-            'target': 'SUEP_isr_aplan',
-            'name': 'SUEP_isr_aplan',  # name to write to histogram
-            'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-            'axis': {'label': 'SUEP_isr_aplan', 'n_or_arr': 100, 'lo': 0, 'hi': 1}
-        },
-        'h_SUEP_isr_FW2M': {
-            'target': 'SUEP_isr_FW2M',
-            'name': 'SUEP_isr_FW2M',  # name to write to histogram
-            'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-            'axis': {'label': 'SUEP_isr_FW2M', 'n_or_arr': 100, 'lo': 0, 'hi': 1}
-        },
-        'h_SUEP_isr_D': {
-            'target': 'SUEP_isr_D',
-            'name': 'SUEP_isr_D',  # name to write to histogram
-            'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-            'axis': {'label': 'SUEP_isr_D', 'n_or_arr': 100, 'lo': 0, 'hi': 1}
-        },
-        'h_SUEP_isr_pt_ave': {
-            'target': 'SUEP_isr_pt_ave',
-            'name': 'SUEP_isr_pt_ave',  # name to write to histogram
-            'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-            'axis': {'label': 'SUEP_isr_pt_ave', 'n_or_arr': 100, 'lo': 0, 'hi': 25}
-        },
-        'h_SUEP_isr_girth': {
-            'target': 'SUEP_isr_girth',
-            'name': 'SUEP_isr_girth',  # name to write to histogram
-            'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-            'axis': {'label': 'SUEP_isr_girth', 'n_or_arr': 30, 'lo': 0, 'hi': 3}
-        },
-        'h_HTTot': {
-            'target': 'HTTot',
-            'name': 'HTTot',  # name to write to histogram
-            'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-            'axis': {'label': 'HTTot', 'n_or_arr': 250, 'lo': 0, 'hi': 5000}
-        },
-        'h_ngood_fastjets': {
-            'target': 'ngood_fastjets',
-            'name': 'ngood_fastjets',  # name to write to histogram
-            'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-            'axis': {'label': 'ngood_fastjets', 'n_or_arr': 15, 'lo': 0, 'hi': 15}
-        },
+
+        # 'h_nCleaned_Cands': {
+        #     'target': 'nCleaned_Cands',
+        #     'name': 'nCleaned_Cands',  # name to write to histogram
+        #     'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
+        #     'axis': {'label': 'nCleaned_Cands', 'n_or_arr': 500, 'lo': 0, 'hi': 500}
+        # },
+        # 'h_met_pt': {
+        #     'target': 'met_pt',
+        #     'name': 'met_pt',  # name to write to histogram
+        #     'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
+        #     'axis': {'label': 'met_pt', 'n_or_arr': 150, 'lo': 0, 'hi': 1500}
+        # },
+        # 'h_CaloMET_pt': {
+        #     'target': 'CaloMET_pt',
+        #     'name': 'CaloMET_pt',  # name to write to histogram
+        #     'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
+        #     'axis': {'label': 'CaloMET_pt', 'n_or_arr': 150, 'lo': 0, 'hi': 1500}
+        # },
+        # #'h_npv': {
+        # #    'target': 'npv',
+        # #    'name': 'npv',  # name to write to histogram
+        # #    'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
+        # #    'axis': {'label': 'npv', 'n_or_arr': 120, 'lo': 0, 'hi': 120}
+        # #},
+        # #'h_pu': {
+        # #    'target': 'pu',
+        # #    'name': 'pu',  # name to write to histogram
+        # #    'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
+        # #    'axis': {'label': 'pu', 'n_or_arr': 120, 'lo': 0, 'hi': 120}
+        # #},
+        # #'h_rho': {
+        # #    'target': 'rho',
+        # #    'name': 'rho',  # name to write to histogram
+        # #    'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
+        # #    'axis': {'label': 'rho', 'n_or_arr': 120, 'lo': 0, 'hi': 120}
+        # #},
+        # 'h_SUEP_mult_pt': {
+        #     'target': 'SUEP_mult_pt',
+        #     'name': 'SUEP_mult_pt',  # name to write to histogram
+        #     'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
+        #     'axis': {'label': 'SUEP_mult_pt', 'n_or_arr': 100, 'lo': 0, 'hi': 2000}
+        # },
+        # 'h_SUEP_mult_m': {
+        #     'target': 'SUEP_mult_m',
+        #     'name': 'SUEP_mult_m',  # name to write to histogram
+        #     'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
+        #     'axis': {'label': 'SUEP_mult_m', 'n_or_arr': 100, 'lo': 0, 'hi': 4000}
+        # },
+        # 'h_SUEP_mult_eta': {
+        #     'target': 'SUEP_mult_eta',
+        #     'name': 'SUEP_mult_eta',  # name to write to histogram
+        #     'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
+        #     'axis': {'label': 'SUEP_mult_eta', 'n_or_arr': 100, 'lo': -5, 'hi': 5}
+        # },
+        # 'h_SUEP_mult_phi': {
+        #     'target': 'SUEP_mult_phi',
+        #     'name': 'SUEP_mult_phi',  # name to write to histogram
+        #     'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
+        #     'axis': {'label': 'SUEP_mult_phi', 'n_or_arr': 100, 'lo': 0, 'hi': 6.5}
+        # },
+        # 'h_SUEP_mult_nconst': {
+        #     'target': 'SUEP_mult_nconst',
+        #     'name': 'SUEP_mult_nconst',  # name to write to histogram
+        #     'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
+        #     'axis': {'label': 'SUEP_mult_nconst', 'n_or_arr': 800, 'lo': 0, 'hi': 800}
+        # },
+        # 'h_SUEP_mult_spher': {
+        #     'target': 'SUEP_mult_spher',
+        #     'name': 'SUEP_mult_spher',  # name to write to histogram
+        #     'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
+        #     'axis': {'label': 'SUEP_mult_spher', 'n_or_arr': 100, 'lo': 0, 'hi': 1}
+        # },
+        # 'h_SUEP_mult_aplan': {
+        #     'target': 'SUEP_mult_aplan',
+        #     'name': 'SUEP_mult_aplan',  # name to write to histogram
+        #     'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
+        #     'axis': {'label': 'SUEP_mult_aplan', 'n_or_arr': 100, 'lo': 0, 'hi': 1}
+        # },
+        # 'h_SUEP_mult_FW2M': {
+        #     'target': 'SUEP_mult_FW2M',
+        #     'name': 'SUEP_mult_FW2M',  # name to write to histogram
+        #     'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
+        #     'axis': {'label': 'SUEP_mult_FW2M', 'n_or_arr': 100, 'lo': 0, 'hi': 1}
+        # },
+        # 'h_SUEP_mult_D': {
+        #     'target': 'SUEP_mult_D',
+        #     'name': 'SUEP_mult_D',  # name to write to histogram
+        #     'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
+        #     'axis': {'label': 'SUEP_mult_D', 'n_or_arr': 100, 'lo': 0, 'hi': 1}
+        # },
+        # 'h_SUEP_mult_pt_ave': {
+        #     'target': 'SUEP_mult_pt_ave',
+        #     'name': 'SUEP_mult_pt_ave',  # name to write to histogram
+        #     'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
+        #     'axis': {'label': 'SUEP_mult_pt_ave', 'n_or_arr': 100, 'lo': 0, 'hi': 25}
+        # },
+        # 'h_SUEP_mult_girth': {
+        #     'target': 'SUEP_mult_girth',
+        #     'name': 'SUEP_mult_girth',  # name to write to histogram
+        #     'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
+        #     'axis': {'label': 'SUEP_mult_girth', 'n_or_arr': 30, 'lo': 0, 'hi': 3}
+        # },
+        # 'h_SUEP_pt_pt': {
+        #     'target': 'SUEP_pt_pt',
+        #     'name': 'SUEP_pt_pt',  # name to write to histogram
+        #     'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
+        #     'axis': {'label': 'SUEP_pt_pt', 'n_or_arr': 100, 'lo': 0, 'hi': 2000}
+        # },
+        # 'h_SUEP_pt_m': {
+        #     'target': 'SUEP_pt_m',
+        #     'name': 'SUEP_pt_m',  # name to write to histogram
+        #     'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
+        #     'axis': {'label': 'SUEP_pt_m', 'n_or_arr': 150, 'lo': 0, 'hi': 4000}
+        # },
+        # 'h_SUEP_pt_eta': {
+        #     'target': 'SUEP_pt_eta',
+        #     'name': 'SUEP_pt_eta',  # name to write to histogram
+        #     'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
+        #     'axis': {'label': 'SUEP_pt_eta', 'n_or_arr': 100, 'lo': -5, 'hi': 5}
+        # },
+        # 'h_SUEP_pt_phi': {
+        #     'target': 'SUEP_pt_phi',
+        #     'name': 'SUEP_pt_phi',  # name to write to histogram
+        #     'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
+        #     'axis': {'label': 'SUEP_pt_phi', 'n_or_arr': 100, 'lo': 0, 'hi': 6.5}
+        # },
+        # 'h_SUEP_pt_nconst': {
+        #     'target': 'SUEP_pt_nconst',
+        #     'name': 'SUEP_pt_nconst',  # name to write to histogram
+        #     'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
+        #     'axis': {'label': 'SUEP_pt_nconst', 'n_or_arr': 800, 'lo': 0, 'hi': 800}
+        # },
+        # 'h_SUEP_pt_spher': {
+        #     'target': 'SUEP_pt_spher',
+        #     'name': 'SUEP_pt_spher',  # name to write to histogram
+        #     'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
+        #     'axis': {'label': 'SUEP_pt_spher', 'n_or_arr': 100, 'lo': 0, 'hi': 1}
+        # },
+        # 'h_SUEP_pt_aplan': {
+        #     'target': 'SUEP_pt_aplan',
+        #     'name': 'SUEP_pt_aplan',  # name to write to histogram
+        #     'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
+        #     'axis': {'label': 'SUEP_pt_aplan', 'n_or_arr': 100, 'lo': 0, 'hi': 1}
+        # },
+        # 'h_SUEP_pt_FW2M': {
+        #     'target': 'SUEP_pt_FW2M',
+        #     'name': 'SUEP_pt_FW2M',  # name to write to histogram
+        #     'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
+        #     'axis': {'label': 'SUEP_pt_FW2M', 'n_or_arr': 100, 'lo': 0, 'hi': 1}
+        # },
+        # 'h_SUEP_pt_D': {
+        #     'target': 'SUEP_pt_D',
+        #     'name': 'SUEP_pt_D',  # name to write to histogram
+        #     'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
+        #     'axis': {'label': 'SUEP_pt_D', 'n_or_arr': 100, 'lo': 0, 'hi': 1}
+        # },
+        # 'h_SUEP_pt_pt_ave': {
+        #     'target': 'SUEP_pt_pt_ave',
+        #     'name': 'SUEP_pt_pt_ave',  # name to write to histogram
+        #     'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
+        #     'axis': {'label': 'SUEP_pt_pt_ave', 'n_or_arr': 100, 'lo': 0, 'hi': 25}
+        # },
+        # 'h_SUEP_pt_girth': {
+        #     'target': 'SUEP_pt_girth',
+        #     'name': 'SUEP_pt_girth',  # name to write to histogram
+        #     'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
+        #     'axis': {'label': 'SUEP_pt_girth', 'n_or_arr': 30, 'lo': 0, 'hi': 3}
+        # },
+        # 'h_SUEP_isr_pt': {
+        #     'target': 'SUEP_isr_pt',
+        #     'name': 'SUEP_isr_pt',  # name to write to histogram
+        #     'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
+        #     'axis': {'label': 'SUEP_isr_pt', 'n_or_arr': 100, 'lo': 0, 'hi': 2000}
+        # },  
+        # 'h_SUEP_isr_m': {
+        #     'target': 'SUEP_isr_m',
+        #     'name': 'SUEP_isr_m',  # name to write to histogram
+        #     'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
+        #     'axis': {'label': 'SUEP_isr_m', 'n_or_arr': 150, 'lo': 0, 'hi': 4000}
+        # },
+        # 'h_SUEP_isr_eta': {
+        #     'target': 'SUEP_isr_eta',
+        #     'name': 'SUEP_isr_eta',  # name to write to histogram
+        #     'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
+        #     'axis': {'label': 'SUEP_isr_eta', 'n_or_arr': 100, 'lo': -5, 'hi': 5}
+        # },
+        # 'h_SUEP_isr_phi': {
+        #     'target': 'SUEP_isr_phi',
+        #     'name': 'SUEP_isr_phi',  # name to write to histogram
+        #     'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
+        #     'axis': {'label': 'SUEP_isr_phi', 'n_or_arr': 200, 'lo': -6.5, 'hi': 6.5}
+        # },
+        # 'h_SUEP_isr_nconst': {
+        #     'target': 'SUEP_isr_nconst',
+        #     'name': 'SUEP_isr_nconst',  # name to write to histogram
+        #     'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
+        #     'axis': {'label': 'SUEP_isr_nconst', 'n_or_arr': 800, 'lo': 0, 'hi': 800}
+        # },
+        # 'h_SUEP_isr_spher': {
+        #     'target': 'SUEP_isr_spher',
+        #     'name': 'SUEP_isr_spher',  # name to write to histogram
+        #     'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
+        #     'axis': {'label': 'SUEP_isr_spher', 'n_or_arr': 100, 'lo': 0, 'hi': 1}
+        # },
+        # 'h_SUEP_isr_aplan': {
+        #     'target': 'SUEP_isr_aplan',
+        #     'name': 'SUEP_isr_aplan',  # name to write to histogram
+        #     'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
+        #     'axis': {'label': 'SUEP_isr_aplan', 'n_or_arr': 100, 'lo': 0, 'hi': 1}
+        # },
+        # 'h_SUEP_isr_FW2M': {
+        #     'target': 'SUEP_isr_FW2M',
+        #     'name': 'SUEP_isr_FW2M',  # name to write to histogram
+        #     'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
+        #     'axis': {'label': 'SUEP_isr_FW2M', 'n_or_arr': 100, 'lo': 0, 'hi': 1}
+        # },
+        # 'h_SUEP_isr_D': {
+        #     'target': 'SUEP_isr_D',
+        #     'name': 'SUEP_isr_D',  # name to write to histogram
+        #     'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
+        #     'axis': {'label': 'SUEP_isr_D', 'n_or_arr': 100, 'lo': 0, 'hi': 1}
+        # },
+        # 'h_SUEP_isr_pt_ave': {
+        #     'target': 'SUEP_isr_pt_ave',
+        #     'name': 'SUEP_isr_pt_ave',  # name to write to histogram
+        #     'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
+        #     'axis': {'label': 'SUEP_isr_pt_ave', 'n_or_arr': 100, 'lo': 0, 'hi': 25}
+        # },
+        # 'h_SUEP_isr_girth': {
+        #     'target': 'SUEP_isr_girth',
+        #     'name': 'SUEP_isr_girth',  # name to write to histogram
+        #     'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
+        #     'axis': {'label': 'SUEP_isr_girth', 'n_or_arr': 30, 'lo': 0, 'hi': 3}
+        # },
+        # 'h_HTTot': {
+        #     'target': 'HTTot',
+        #     'name': 'HTTot',  # name to write to histogram
+        #     'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
+        #     'axis': {'label': 'HTTot', 'n_or_arr': 250, 'lo': 0, 'hi': 5000}
+        # },
+        # 'h_ngood_fastjets': {
+        #     'target': 'ngood_fastjets',
+        #     'name': 'ngood_fastjets',  # name to write to histogram
+        #     'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
+        #     'axis': {'label': 'ngood_fastjets', 'n_or_arr': 15, 'lo': 0, 'hi': 15}
+        # },
     }
     selection = {
-            "basic" : [
-                "event.nCleaned_Cands{sys} > 0"
+
+
+        #     "basic" : [
+        #         # "event.nCleaned_Cands{sys} > 0"
+        #         #"event.met_filter{sys}==1" ,
+		# #"(event.HLT_PFHT1050{sys}==1) | (event.HLT_PFJet500{sys}==1)",
+	    # ],
+
+            "sevzero" : [
+                "event.time != -999",
+                "event.sevlv == 0"
                 #"event.met_filter{sys}==1" ,
 		#"(event.HLT_PFHT1050{sys}==1) | (event.HLT_PFJet500{sys}==1)",
-	    ],
-            "nconst_85" : [
+	    ],   
+
+            "sevthree" : [
+                "event.time != -999",
+                "event.sevlv == 3"
                 #"event.met_filter{sys}==1" ,
-                #"(event.HLT_PFHT1050{sys}==1) | (event.HLT_PFJet500{sys}==1)",
-		"event.nCleaned_Cands{sys} > 85"
-            ],
-            "nconst_100" : [
+		#"(event.HLT_PFHT1050{sys}==1) | (event.HLT_PFJet500{sys}==1)",
+	    ],   
+
+            "sevfour" : [
+                "event.time != -999",
+                "event.sevlv == 4"
                 #"event.met_filter{sys}==1" ,
-                #"(event.HLT_PFHT1050{sys}==1) | (event.HLT_PFJet500{sys}==1)",
-                "event.nCleaned_Cands{sys} > 100"
-            ],
-            "nconst_150" : [
-                #"event.met_filter{sys}==1" ,
-                #"(event.HLT_PFHT1050{sys}==1) | (event.HLT_PFJet500{sys}==1)",
-                "event.nCleaned_Cands{sys} > 150"
-            ],
-            "nconst_175" : [
-                #"event.met_filter{sys}==1" ,
-                #"(event.HLT_PFHT1050{sys}==1) | (event.HLT_PFJet500{sys}==1)",
-                "event.nCleaned_Cands{sys} > 175"
-            ],
-            "nconst_200" : [
-                #"event.met_filter{sys}==1" ,
-                #"(event.HLT_PFHT1050{sys}==1) | (event.HLT_PFJet500{sys}==1)",
-                "event.nCleaned_Cands{sys} > 200"
-            ],
-            "nconst_250" : [
-                #"event.met_filter{sys}==1" ,
-               # "(event.HLT_PFHT1050{sys}==1) | (event.HLT_PFJet500{sys}==1)",
-                "event.nCleaned_Cands{sys} > 250"
-            ],
+		#"(event.HLT_PFHT1050{sys}==1) | (event.HLT_PFJet500{sys}==1)",
+	    ],                        
+
+
+        #     "basic" : [
+        #         "event.nCleaned_Cands{sys} > 0"
+        #         #"event.met_filter{sys}==1" ,
+		# #"(event.HLT_PFHT1050{sys}==1) | (event.HLT_PFJet500{sys}==1)",
+	    # ],
+        #     "nconst_85" : [
+        #         #"event.met_filter{sys}==1" ,
+        #         #"(event.HLT_PFHT1050{sys}==1) | (event.HLT_PFJet500{sys}==1)",
+		# "event.nCleaned_Cands{sys} > 85"
+        #     ],
+        #     "nconst_100" : [
+        #         #"event.met_filter{sys}==1" ,
+        #         #"(event.HLT_PFHT1050{sys}==1) | (event.HLT_PFJet500{sys}==1)",
+        #         "event.nCleaned_Cands{sys} > 100"
+        #     ],
+        #     "nconst_150" : [
+        #         #"event.met_filter{sys}==1" ,
+        #         #"(event.HLT_PFHT1050{sys}==1) | (event.HLT_PFJet500{sys}==1)",
+        #         "event.nCleaned_Cands{sys} > 150"
+        #     ],
+        #     "nconst_175" : [
+        #         #"event.met_filter{sys}==1" ,
+        #         #"(event.HLT_PFHT1050{sys}==1) | (event.HLT_PFJet500{sys}==1)",
+        #         "event.nCleaned_Cands{sys} > 175"
+        #     ],
+        #     "nconst_200" : [
+        #         #"event.met_filter{sys}==1" ,
+        #         #"(event.HLT_PFHT1050{sys}==1) | (event.HLT_PFJet500{sys}==1)",
+        #         "event.nCleaned_Cands{sys} > 200"
+        #     ],
+        #     "nconst_250" : [
+        #         #"event.met_filter{sys}==1" ,
+        #        # "(event.HLT_PFHT1050{sys}==1) | (event.HLT_PFJet500{sys}==1)",
+        #         "event.nCleaned_Cands{sys} > 250"
+        #     ],
         }
 
 

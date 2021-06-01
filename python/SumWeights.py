@@ -39,12 +39,14 @@ class GenSumWeight(ProcessorABC):
     def process(self, df, *args):
         output = self.accumulator.identity()
 
-        weights = df.genEventSumw
-        weight_array = np.array(weights)
-        genweight = weight_array.sum()
+        # weights = df.genEventSumw
+        # weight_array = np.array(weights)
+        # genweight = weight_array.sum()
         output["genEventSumw"].fill(
-            genEventSumw=0.5,
-            weight=genweight
+            genEventSumw=1.,
+            weight = 1.
+            # genEventSumw=0.5,
+            # weight=genweight
         )
 
         return output
