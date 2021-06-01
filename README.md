@@ -8,7 +8,7 @@ Steps to perform ETT (ECAL Trigger Team) analysis with ETTAnalyzer files:
     cmsrel CMSSW_10_6_4
     cd CMSSW_10_6_4/src
     cmsenv
-    git clone https://github.com/SUEPPhysics/SUEPCoffea.git
+    git clone git@github.com:atishelmanch/SUEPCoffea.git
     cd SUEPCoffea
     singularity shell -B ${PWD} /cvmfs/unpacked.cern.ch/registry.hub.docker.com/coffeateam/coffea-dask:latest
     python3 condor_SUEP_WS.py --isMC=0 --era=2018 --infile=ETT_test_197.root --treename="tuplizer/ETTAnalyzerTree"
