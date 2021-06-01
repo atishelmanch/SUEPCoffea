@@ -64,8 +64,8 @@ class WSProducer(ProcessorABC):
                 # selectedValues = np.array(ak.to_list(df[hist['target']][selec]), dtype="O")
                 selectedValues = np.hstack(ak.to_list(df[hist['target']][selec])).flatten()
                 # selectedValues.flatten()
-                print("type:",type(selectedValues))
-                print("selectedValues:",selectedValues)
+                #print("type:",type(selectedValues))
+                #print("selectedValues:",selectedValues)
                 # print("values:",values)
                 # print("Selected:", np.array(ak.to_list(values), dtype="O"))
                 # ak.to_list(values), dtype="O"

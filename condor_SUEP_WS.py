@@ -23,6 +23,7 @@ parser.add_argument('--infile', type=str, default=None, help="")
 parser.add_argument('--dataset', type=str, default="X", help="")
 parser.add_argument('--nevt', type=str, default=-1, help="")
 parser.add_argument('--treename', type=str, default="Events", help="")
+parser.add_argument('--inDir', type=str, default="", help="")
 
 options = parser.parse_args()
 
@@ -91,12 +92,15 @@ if options.isMC and options.doSyst==1:
 for i in modules_era:
     print("modules : ", i)
 
+files = ["%s/%s"%(options.inDir,f) for f in os.listdir(options.inDir) if f.endswith(".root")]
+
 print("Selection : ", pre_selection)
 tstart = time.time()
 f = uproot.recreate("tree_%s_WS.root" % str(options.jobNum))
 for instance in modules_era:
     output = run_uproot_job(
-        {instance.sample: [options.infile]},
+        {instance.sample: files},
+        #{instance.sample: [options.infile]},
         # treename='Events',
         treename=options.treename,
         processor_instance=instance,
@@ -115,7 +119,8 @@ modules_gensum.append(GenSumWeight(isMC=options.isMC, era=int(options.era), do_s
 
 for instance in modules_gensum:
     output = run_uproot_job(
-        {instance.sample: [options.infile]},
+        {instance.sample: files},
+        #{instance.sample: [options.infile]},
         # treename='Runs',
         treename=options.treename,
         processor_instance=instance,
