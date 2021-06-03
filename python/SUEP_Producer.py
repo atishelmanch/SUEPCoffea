@@ -2,7 +2,7 @@
 WSProducer.py
 Workspace producers using coffea.
 """
-from coffea.hist import Hist, Bin, export1d
+from coffea.hist import Hist, Bin, export1d, plot2d
 from coffea.processor import ProcessorABC, LazyDataFrame, dict_accumulator
 from uproot3 import recreate
 import numpy as np
@@ -25,12 +25,23 @@ class WSProducer(ProcessorABC):
         self.sample = sample
         self.syst_var, self.syst_suffix = (syst_var, f'_sys_{syst_var}') if do_syst and syst_var else ('', '')
         self.weight_syst = weight_syst
+
+        # ##-- 1d histograms
+        # self._accumulator = dict_accumulator({
+        #     name: Hist('Events', Bin(name=name, **axis))
+        #     for name, axis in ((self.naming_schema(hist['name'], region), hist['axis'])
+        #                        for _, hist in list(self.histograms.items())
+        #                        for region in hist['region'])
+        # })
+
+        ##-- 2d histograms 
         self._accumulator = dict_accumulator({
-            name: Hist('Events', Bin(name=name, **axis))
-            for name, axis in ((self.naming_schema(hist['name'], region), hist['axis'])
+            name: Hist('Events', Bin(name = axes['xaxis']['label'], **axes['xaxis']), Bin(name = axes['yaxis']['label'], **axes['yaxis'])) ##-- Make it 2d by specifying two Binnings 
+            for name, axes in ((self.naming_schema(hist['name'], region), hist['axes'])
                                for _, hist in list(self.histograms.items())
                                for region in hist['region'])
-        })
+        })        
+
         self.outfile = haddFileName
 
     def __repr__(self):
@@ -45,42 +56,86 @@ class WSProducer(ProcessorABC):
 
         # weight = self.weighting(df)
 
+        ##-- 1d histograms 
         for h, hist in list(self.histograms.items()):
             for region in hist['region']:
 
-                # print("df:",df)
-                # print("df[hist['target']]:",df[hist['target']])
-                # print("With selection:")
-                # print(df[hist['target']][selec])
-
                 name = self.naming_schema(hist['name'], region)
-                selec = self.passbut(df, hist['target'], region)
+                selec = self.passbut(df, hist['target_x'], region) ##-- Should the selection depend on target?
+                # selec = self.passbut(df, region)
 
+                # print("values:",df[hist['target']])
+                # print("target:",hist['target'])
+                # print("region:",region)
+                # print("selec:",selec)
 
-                # print("selec = ",selec)
-                # print("df[hist['target']]:",df[hist['target']])
-                # print("With selection:")
-                # values = df[hist['target']][selec]
-                # selectedValues = np.array(ak.to_list(df[hist['target']][selec]), dtype="O")
-                selectedValues = np.hstack(ak.to_list(df[hist['target']][selec])).flatten()
-                # selectedValues.flatten()
-                #print("type:",type(selectedValues))
-                #print("selectedValues:",selectedValues)
-                # print("values:",values)
-                # print("Selected:", np.array(ak.to_list(values), dtype="O"))
-                # ak.to_list(values), dtype="O"
-                # print("type:",type(df[hist['target']][selec]))
-                # print("to array:",np.asarray(df[hist['target']][selec]))
-                # print("to array:",df[hist['target']][selec].to_numpy())
+                # selectedValues = np.hstack(ak.to_list(df[hist['target']][selec])).flatten()
+
+                # print("x:",hist['target_x'])
+                # print("y:",hist['target_y'])
+                # print("")
+
+                xax_lab = hist['target_x']
+                yax_lab = hist['target_y']
+
+                xVals = np.hstack(ak.to_list(df[hist['target_x']][selec])).flatten()
+                yVals = np.hstack(ak.to_list(df[hist['target_y']][selec])).flatten()
+
 
                 output[name].fill(**{
+                    xax_lab : xVals,
+                    yax_lab : yVals 
+                }
+                )
+
+                # output[name].fill(
+                    
+                #     hist['target_x'] = xVals,
+                #     hist['target_y'] = yVals 
+                    # x = xVals,
+                    # y = yVals                      
+
+                
+
+                # output[name].fill(**{
+                    
+                #     hist['target_x'] : xVals,
+                #     hist['target_y'] : yVals  
+
+                # }
+                    # **{
                     # 'weight': weight[selec],
-                    name: selectedValues
+                  
+                  
+                    # name: selectedValues
+                  
+                  
                     # name: df[hist['target']][selec]
                     # name: df[hist['target']][selec].array().flatten()
                     # name: df[hist['target']][selec]#.flatten()
                     # name: df[hist['target']][selec].flatten()
-                })
+                # }
+                
+                
+                # )
+
+        # ##-- 2d histograms 
+        # for h, hist in list(self.twoD_histograms.items()):
+        #     for region in hist['region']:
+
+        #         name = self.naming_schema(hist['name'], region)
+        #         selec = self.passbut(df, hist['target'], region)
+
+        #         selectedValues = np.hstack(ak.to_list(df[hist['target']][selec])).flatten()
+
+        #         output[name].fill(**{
+        #             # 'weight': weight[selec],
+        #             name: selectedValues
+        #             # name: df[hist['target']][selec]
+        #             # name: df[hist['target']][selec].array().flatten()
+        #             # name: df[hist['target']][selec]#.flatten()
+        #             # name: df[hist['target']][selec].flatten()
+        #         })            
 
         return output
 
@@ -94,328 +149,373 @@ class WSProducer(ProcessorABC):
 class SUEP_NTuple(WSProducer):
     histograms = {
 
-        'h_met_pt': {
-            'target': 'time',
-            'name': 'time',  # name to write to histogram
-            # 'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-            'region': ['sevzero', 'sevthree', 'sevfour'],
-            'axis': {'label': 'time', 'n_or_arr': 120, 'lo': -150, 'hi': 150}
-            # 'axis': {'label': 'time'}
-        },
+        # 'time': {
+        #     'target': 'time',
+        #     'name': 'time', 
+        #     'region': ['sevzero_all', 'sevthree_all', 'sevfour_all'],
+        #     'axes' : {
+        #         'xaxis': {'label': 'time', 'n_or_arr': 120, 'lo': -225, 'hi': 125},
+        #         'yaxis': {'label': 'time', 'n_or_arr': 120, 'lo': -225, 'hi': 125}
+        #     }
 
-        # 'h_nCleaned_Cands': {
-        #     'target': 'nCleaned_Cands',
-        #     'name': 'nCleaned_Cands',  # name to write to histogram
-        #     'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-        #     'axis': {'label': 'nCleaned_Cands', 'n_or_arr': 500, 'lo': 0, 'hi': 500}
         # },
-        # 'h_met_pt': {
-        #     'target': 'met_pt',
-        #     'name': 'met_pt',  # name to write to histogram
-        #     'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-        #     'axis': {'label': 'met_pt', 'n_or_arr': 150, 'lo': 0, 'hi': 1500}
-        # },
-        # 'h_CaloMET_pt': {
-        #     'target': 'CaloMET_pt',
-        #     'name': 'CaloMET_pt',  # name to write to histogram
-        #     'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-        #     'axis': {'label': 'CaloMET_pt', 'n_or_arr': 150, 'lo': 0, 'hi': 1500}
-        # },
-        # #'h_npv': {
-        # #    'target': 'npv',
-        # #    'name': 'npv',  # name to write to histogram
-        # #    'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-        # #    'axis': {'label': 'npv', 'n_or_arr': 120, 'lo': 0, 'hi': 120}
-        # #},
-        # #'h_pu': {
-        # #    'target': 'pu',
-        # #    'name': 'pu',  # name to write to histogram
-        # #    'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-        # #    'axis': {'label': 'pu', 'n_or_arr': 120, 'lo': 0, 'hi': 120}
-        # #},
-        # #'h_rho': {
-        # #    'target': 'rho',
-        # #    'name': 'rho',  # name to write to histogram
-        # #    'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-        # #    'axis': {'label': 'rho', 'n_or_arr': 120, 'lo': 0, 'hi': 120}
-        # #},
-        # 'h_SUEP_mult_pt': {
-        #     'target': 'SUEP_mult_pt',
-        #     'name': 'SUEP_mult_pt',  # name to write to histogram
-        #     'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-        #     'axis': {'label': 'SUEP_mult_pt', 'n_or_arr': 100, 'lo': 0, 'hi': 2000}
-        # },
-        # 'h_SUEP_mult_m': {
-        #     'target': 'SUEP_mult_m',
-        #     'name': 'SUEP_mult_m',  # name to write to histogram
-        #     'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-        #     'axis': {'label': 'SUEP_mult_m', 'n_or_arr': 100, 'lo': 0, 'hi': 4000}
-        # },
-        # 'h_SUEP_mult_eta': {
-        #     'target': 'SUEP_mult_eta',
-        #     'name': 'SUEP_mult_eta',  # name to write to histogram
-        #     'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-        #     'axis': {'label': 'SUEP_mult_eta', 'n_or_arr': 100, 'lo': -5, 'hi': 5}
-        # },
-        # 'h_SUEP_mult_phi': {
-        #     'target': 'SUEP_mult_phi',
-        #     'name': 'SUEP_mult_phi',  # name to write to histogram
-        #     'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-        #     'axis': {'label': 'SUEP_mult_phi', 'n_or_arr': 100, 'lo': 0, 'hi': 6.5}
-        # },
-        # 'h_SUEP_mult_nconst': {
-        #     'target': 'SUEP_mult_nconst',
-        #     'name': 'SUEP_mult_nconst',  # name to write to histogram
-        #     'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-        #     'axis': {'label': 'SUEP_mult_nconst', 'n_or_arr': 800, 'lo': 0, 'hi': 800}
-        # },
-        # 'h_SUEP_mult_spher': {
-        #     'target': 'SUEP_mult_spher',
-        #     'name': 'SUEP_mult_spher',  # name to write to histogram
-        #     'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-        #     'axis': {'label': 'SUEP_mult_spher', 'n_or_arr': 100, 'lo': 0, 'hi': 1}
-        # },
-        # 'h_SUEP_mult_aplan': {
-        #     'target': 'SUEP_mult_aplan',
-        #     'name': 'SUEP_mult_aplan',  # name to write to histogram
-        #     'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-        #     'axis': {'label': 'SUEP_mult_aplan', 'n_or_arr': 100, 'lo': 0, 'hi': 1}
-        # },
-        # 'h_SUEP_mult_FW2M': {
-        #     'target': 'SUEP_mult_FW2M',
-        #     'name': 'SUEP_mult_FW2M',  # name to write to histogram
-        #     'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-        #     'axis': {'label': 'SUEP_mult_FW2M', 'n_or_arr': 100, 'lo': 0, 'hi': 1}
-        # },
-        # 'h_SUEP_mult_D': {
-        #     'target': 'SUEP_mult_D',
-        #     'name': 'SUEP_mult_D',  # name to write to histogram
-        #     'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-        #     'axis': {'label': 'SUEP_mult_D', 'n_or_arr': 100, 'lo': 0, 'hi': 1}
-        # },
-        # 'h_SUEP_mult_pt_ave': {
-        #     'target': 'SUEP_mult_pt_ave',
-        #     'name': 'SUEP_mult_pt_ave',  # name to write to histogram
-        #     'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-        #     'axis': {'label': 'SUEP_mult_pt_ave', 'n_or_arr': 100, 'lo': 0, 'hi': 25}
-        # },
-        # 'h_SUEP_mult_girth': {
-        #     'target': 'SUEP_mult_girth',
-        #     'name': 'SUEP_mult_girth',  # name to write to histogram
-        #     'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-        #     'axis': {'label': 'SUEP_mult_girth', 'n_or_arr': 30, 'lo': 0, 'hi': 3}
-        # },
-        # 'h_SUEP_pt_pt': {
-        #     'target': 'SUEP_pt_pt',
-        #     'name': 'SUEP_pt_pt',  # name to write to histogram
-        #     'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-        #     'axis': {'label': 'SUEP_pt_pt', 'n_or_arr': 100, 'lo': 0, 'hi': 2000}
-        # },
-        # 'h_SUEP_pt_m': {
-        #     'target': 'SUEP_pt_m',
-        #     'name': 'SUEP_pt_m',  # name to write to histogram
-        #     'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-        #     'axis': {'label': 'SUEP_pt_m', 'n_or_arr': 150, 'lo': 0, 'hi': 4000}
-        # },
-        # 'h_SUEP_pt_eta': {
-        #     'target': 'SUEP_pt_eta',
-        #     'name': 'SUEP_pt_eta',  # name to write to histogram
-        #     'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-        #     'axis': {'label': 'SUEP_pt_eta', 'n_or_arr': 100, 'lo': -5, 'hi': 5}
-        # },
-        # 'h_SUEP_pt_phi': {
-        #     'target': 'SUEP_pt_phi',
-        #     'name': 'SUEP_pt_phi',  # name to write to histogram
-        #     'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-        #     'axis': {'label': 'SUEP_pt_phi', 'n_or_arr': 100, 'lo': 0, 'hi': 6.5}
-        # },
-        # 'h_SUEP_pt_nconst': {
-        #     'target': 'SUEP_pt_nconst',
-        #     'name': 'SUEP_pt_nconst',  # name to write to histogram
-        #     'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-        #     'axis': {'label': 'SUEP_pt_nconst', 'n_or_arr': 800, 'lo': 0, 'hi': 800}
-        # },
-        # 'h_SUEP_pt_spher': {
-        #     'target': 'SUEP_pt_spher',
-        #     'name': 'SUEP_pt_spher',  # name to write to histogram
-        #     'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-        #     'axis': {'label': 'SUEP_pt_spher', 'n_or_arr': 100, 'lo': 0, 'hi': 1}
-        # },
-        # 'h_SUEP_pt_aplan': {
-        #     'target': 'SUEP_pt_aplan',
-        #     'name': 'SUEP_pt_aplan',  # name to write to histogram
-        #     'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-        #     'axis': {'label': 'SUEP_pt_aplan', 'n_or_arr': 100, 'lo': 0, 'hi': 1}
-        # },
-        # 'h_SUEP_pt_FW2M': {
-        #     'target': 'SUEP_pt_FW2M',
-        #     'name': 'SUEP_pt_FW2M',  # name to write to histogram
-        #     'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-        #     'axis': {'label': 'SUEP_pt_FW2M', 'n_or_arr': 100, 'lo': 0, 'hi': 1}
-        # },
-        # 'h_SUEP_pt_D': {
-        #     'target': 'SUEP_pt_D',
-        #     'name': 'SUEP_pt_D',  # name to write to histogram
-        #     'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-        #     'axis': {'label': 'SUEP_pt_D', 'n_or_arr': 100, 'lo': 0, 'hi': 1}
-        # },
-        # 'h_SUEP_pt_pt_ave': {
-        #     'target': 'SUEP_pt_pt_ave',
-        #     'name': 'SUEP_pt_pt_ave',  # name to write to histogram
-        #     'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-        #     'axis': {'label': 'SUEP_pt_pt_ave', 'n_or_arr': 100, 'lo': 0, 'hi': 25}
-        # },
-        # 'h_SUEP_pt_girth': {
-        #     'target': 'SUEP_pt_girth',
-        #     'name': 'SUEP_pt_girth',  # name to write to histogram
-        #     'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-        #     'axis': {'label': 'SUEP_pt_girth', 'n_or_arr': 30, 'lo': 0, 'hi': 3}
-        # },
-        # 'h_SUEP_isr_pt': {
-        #     'target': 'SUEP_isr_pt',
-        #     'name': 'SUEP_isr_pt',  # name to write to histogram
-        #     'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-        #     'axis': {'label': 'SUEP_isr_pt', 'n_or_arr': 100, 'lo': 0, 'hi': 2000}
-        # },  
-        # 'h_SUEP_isr_m': {
-        #     'target': 'SUEP_isr_m',
-        #     'name': 'SUEP_isr_m',  # name to write to histogram
-        #     'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-        #     'axis': {'label': 'SUEP_isr_m', 'n_or_arr': 150, 'lo': 0, 'hi': 4000}
-        # },
-        # 'h_SUEP_isr_eta': {
-        #     'target': 'SUEP_isr_eta',
-        #     'name': 'SUEP_isr_eta',  # name to write to histogram
-        #     'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-        #     'axis': {'label': 'SUEP_isr_eta', 'n_or_arr': 100, 'lo': -5, 'hi': 5}
-        # },
-        # 'h_SUEP_isr_phi': {
-        #     'target': 'SUEP_isr_phi',
-        #     'name': 'SUEP_isr_phi',  # name to write to histogram
-        #     'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-        #     'axis': {'label': 'SUEP_isr_phi', 'n_or_arr': 200, 'lo': -6.5, 'hi': 6.5}
-        # },
-        # 'h_SUEP_isr_nconst': {
-        #     'target': 'SUEP_isr_nconst',
-        #     'name': 'SUEP_isr_nconst',  # name to write to histogram
-        #     'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-        #     'axis': {'label': 'SUEP_isr_nconst', 'n_or_arr': 800, 'lo': 0, 'hi': 800}
-        # },
-        # 'h_SUEP_isr_spher': {
-        #     'target': 'SUEP_isr_spher',
-        #     'name': 'SUEP_isr_spher',  # name to write to histogram
-        #     'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-        #     'axis': {'label': 'SUEP_isr_spher', 'n_or_arr': 100, 'lo': 0, 'hi': 1}
-        # },
-        # 'h_SUEP_isr_aplan': {
-        #     'target': 'SUEP_isr_aplan',
-        #     'name': 'SUEP_isr_aplan',  # name to write to histogram
-        #     'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-        #     'axis': {'label': 'SUEP_isr_aplan', 'n_or_arr': 100, 'lo': 0, 'hi': 1}
-        # },
-        # 'h_SUEP_isr_FW2M': {
-        #     'target': 'SUEP_isr_FW2M',
-        #     'name': 'SUEP_isr_FW2M',  # name to write to histogram
-        #     'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-        #     'axis': {'label': 'SUEP_isr_FW2M', 'n_or_arr': 100, 'lo': 0, 'hi': 1}
-        # },
-        # 'h_SUEP_isr_D': {
-        #     'target': 'SUEP_isr_D',
-        #     'name': 'SUEP_isr_D',  # name to write to histogram
-        #     'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-        #     'axis': {'label': 'SUEP_isr_D', 'n_or_arr': 100, 'lo': 0, 'hi': 1}
-        # },
-        # 'h_SUEP_isr_pt_ave': {
-        #     'target': 'SUEP_isr_pt_ave',
-        #     'name': 'SUEP_isr_pt_ave',  # name to write to histogram
-        #     'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-        #     'axis': {'label': 'SUEP_isr_pt_ave', 'n_or_arr': 100, 'lo': 0, 'hi': 25}
-        # },
-        # 'h_SUEP_isr_girth': {
-        #     'target': 'SUEP_isr_girth',
-        #     'name': 'SUEP_isr_girth',  # name to write to histogram
-        #     'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-        #     'axis': {'label': 'SUEP_isr_girth', 'n_or_arr': 30, 'lo': 0, 'hi': 3}
-        # },
-        # 'h_HTTot': {
-        #     'target': 'HTTot',
-        #     'name': 'HTTot',  # name to write to histogram
-        #     'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-        #     'axis': {'label': 'HTTot', 'n_or_arr': 250, 'lo': 0, 'hi': 5000}
-        # },
-        # 'h_ngood_fastjets': {
-        #     'target': 'ngood_fastjets',
-        #     'name': 'ngood_fastjets',  # name to write to histogram
-        #     'region': ['basic', 'nconst_85', 'nconst_100', 'nconst_150', 'nconst_175', 'nconst_200', 'nconst_250'],
-        #     'axis': {'label': 'ngood_fastjets', 'n_or_arr': 15, 'lo': 0, 'hi': 15}
-        # },
+
+        'twod': {
+            # 'target': { 'x': 'twrADC', 'y' : 'twrEmul3ADC'},
+            'target_x' : 'twrEmul3ADC',
+            'target_y' : 'twrADC',
+            'name': 'twod', 
+            'region': ['sevzero_all', 'sevthree_all', 'sevfour_all'],
+            'axes' : {
+                # 'xaxis': {'label': 'twrEmul3ADC', 'n_or_arr': 256, 'lo': 0, 'hi': 256},
+                # 'yaxis': {'label': 'twrADC', 'n_or_arr': 256, 'lo': 0, 'hi': 256}
+                'xaxis': {'label': 'twrEmul3ADC', 'n_or_arr': 256, 'lo': 0, 'hi': 256},
+                'yaxis': {'label': 'twrADC', 'n_or_arr': 256, 'lo': 0, 'hi': 256}                
+            }
+
+        },        
+
+        # ''
+
+        # # 'twrEmul3ADC': {
+        # #     'target': 'twrEmul3ADC',
+        # #     'name': 'twrEmul3ADC', 
+        # #     'region': ['sevzero_all', 'sevthree_all', 'sevfour_all', 'sevzero_TPratio_0_to_0p1'
+        # # #                'sevzero_TPratio_0', 'sevthree_TPratio_0', 'sevfour_TPratio_0',
+        # # #                'sevzero_TPratio_0_to_0p1', 'sevthree_TPratio_0_to_0p1', 'sevfour_TPratio_0_to_0p1',
+        # # #                'sevzero_TPratio_0p1_to_0p2', 'sevthree_TPratio_0p1_to_0p2', 'sevfour_TPratio_0p1_to_0p2',
+        # # #                'sevzero_TPratio_0p2_to_0p3', 'sevthree_TPratio_0p2_to_0p3', 'sevfour_TPratio_0p2_to_0p3',
+        # # #                'sevzero_TPratio_0p3_to_0p4', 'sevthree_TPratio_0p3_to_0p4', 'sevfour_TPratio_0p3_to_0p4',
+        # # #                'sevzero_TPratio_0p4_to_0p5', 'sevthree_TPratio_0p4_to_0p5', 'sevfour_TPratio_0p4_to_0p5',
+        # # #                'sevzero_TPratio_0p5_to_0p6', 'sevthree_TPratio_0p5_to_0p6', 'sevfour_TPratio_0p5_to_0p6',
+        # # #                'sevzero_TPratio_0p6_to_0p7', 'sevthree_TPratio_0p6_to_0p7', 'sevfour_TPratio_0p6_to_0p7',
+        # # #                'sevzero_TPratio_0p7_to_0p8', 'sevthree_TPratio_0p7_to_0p8', 'sevfour_TPratio_0p7_to_0p8',
+        # # #                'sevzero_TPratio_0p8_to_0p9', 'sevthree_TPratio_0p8_to_0p9', 'sevfour_TPratio_0p8_to_0p9',
+        # # #                'sevzero_TPratio_0p9_to_1p0', 'sevthree_TPratio_0p9_to_1p0', 'sevfour_TPratio_0p9_to_1p0',
+        # # #                'sevzero_TPratio_1',          'sevthree_TPratio_1',          'sevfour_TPratio_1'
+            
+        # #     ],
+        # #     'axis': {'label': 'twrEmul3ADC', 'n_or_arr': 256, 'lo': 0, 'hi': 256}
+        # # },  
+
+        # 'twrADC': {
+        #     'target': 'twrADC',
+        #     'name': 'twrADC', 
+        #     'region': ['sevzero_all', 'sevthree_all', 'sevfour_all',
+        # #                'sevzero_TPratio_0', 'sevthree_TPratio_0', 'sevfour_TPratio_0',
+        # #                'sevzero_TPratio_0_to_0p1', 'sevthree_TPratio_0_to_0p1', 'sevfour_TPratio_0_to_0p1',
+        # #                'sevzero_TPratio_0p1_to_0p2', 'sevthree_TPratio_0p1_to_0p2', 'sevfour_TPratio_0p1_to_0p2',
+        # #                'sevzero_TPratio_0p2_to_0p3', 'sevthree_TPratio_0p2_to_0p3', 'sevfour_TPratio_0p2_to_0p3',
+        # #                'sevzero_TPratio_0p3_to_0p4', 'sevthree_TPratio_0p3_to_0p4', 'sevfour_TPratio_0p3_to_0p4',
+        # #                'sevzero_TPratio_0p4_to_0p5', 'sevthree_TPratio_0p4_to_0p5', 'sevfour_TPratio_0p4_to_0p5',
+        # #                'sevzero_TPratio_0p5_to_0p6', 'sevthree_TPratio_0p5_to_0p6', 'sevfour_TPratio_0p5_to_0p6',
+        # #                'sevzero_TPratio_0p6_to_0p7', 'sevthree_TPratio_0p6_to_0p7', 'sevfour_TPratio_0p6_to_0p7',
+        # #                'sevzero_TPratio_0p7_to_0p8', 'sevthree_TPratio_0p7_to_0p8', 'sevfour_TPratio_0p7_to_0p8',
+        # #                'sevzero_TPratio_0p8_to_0p9', 'sevthree_TPratio_0p8_to_0p9', 'sevfour_TPratio_0p8_to_0p9',
+        # #                'sevzero_TPratio_0p9_to_1p0', 'sevthree_TPratio_0p9_to_1p0', 'sevfour_TPratio_0p9_to_1p0',
+        # #                'sevzero_TPratio_1',          'sevthree_TPratio_1',          'sevfour_TPratio_1'
+            
+        #     ],
+        #     'axis': {'label': 'twrADC', 'n_or_arr': 256, 'lo': 0, 'hi': 256}
+        # }, 
+
+        # 'diagPlot': {
+        #     'target': 'twrEmul3ADC:twrADC',
+        #     'name': 'ratio', 
+        #     'region': ['sevzero_all', 'sevthree_all', 'sevfour_all',
+        # #                'sevzero_TPratio_0', 'sevthree_TPratio_0', 'sevfour_TPratio_0',
+        # #                'sevzero_TPratio_0_to_0p1', 'sevthree_TPratio_0_to_0p1', 'sevfour_TPratio_0_to_0p1',
+        # #                'sevzero_TPratio_0p1_to_0p2', 'sevthree_TPratio_0p1_to_0p2', 'sevfour_TPratio_0p1_to_0p2',
+        # #                'sevzero_TPratio_0p2_to_0p3', 'sevthree_TPratio_0p2_to_0p3', 'sevfour_TPratio_0p2_to_0p3',
+        # #                'sevzero_TPratio_0p3_to_0p4', 'sevthree_TPratio_0p3_to_0p4', 'sevfour_TPratio_0p3_to_0p4',
+        # #                'sevzero_TPratio_0p4_to_0p5', 'sevthree_TPratio_0p4_to_0p5', 'sevfour_TPratio_0p4_to_0p5',
+        # #                'sevzero_TPratio_0p5_to_0p6', 'sevthree_TPratio_0p5_to_0p6', 'sevfour_TPratio_0p5_to_0p6',
+        # #                'sevzero_TPratio_0p6_to_0p7', 'sevthree_TPratio_0p6_to_0p7', 'sevfour_TPratio_0p6_to_0p7',
+        # #                'sevzero_TPratio_0p7_to_0p8', 'sevthree_TPratio_0p7_to_0p8', 'sevfour_TPratio_0p7_to_0p8',
+        # #                'sevzero_TPratio_0p8_to_0p9', 'sevthree_TPratio_0p8_to_0p9', 'sevfour_TPratio_0p8_to_0p9',
+        # #                'sevzero_TPratio_0p9_to_1p0', 'sevthree_TPratio_0p9_to_1p0', 'sevfour_TPratio_0p9_to_1p0',
+        # #                'sevzero_TPratio_1',          'sevthree_TPratio_1',          'sevfour_TPratio_1'
+            
+        #     ],
+        #     'axis': {'label': 'twrADC', 'n_or_arr': 256, 'lo': 0, 'hi': 256}
+        # },                                         
+
+    # }
+
+    # twoD_histograms = {
+    #     'realVsEmu': {
+    #           'xvar' : 'twrADC',
+    #           'yvar' : 'twrEmul3ADC',
+    # #         'target': 'twrEmul3ADC:twrADC',
+    #           'name': 'realVsEmu', 
+    #         'region': ['sevzero'],
+    #         'axis': {'label': 'realVsEmu', 'n_or_arr': 256, 'lo': 0, 'hi': 256}
+    #     },    
+
     }
+
     selection = {
 
-
-        #     "basic" : [
-        #         # "event.nCleaned_Cands{sys} > 0"
-        #         #"event.met_filter{sys}==1" ,
-		# #"(event.HLT_PFHT1050{sys}==1) | (event.HLT_PFJet500{sys}==1)",
-	    # ],
-
-            "sevzero" : [
+        ##-- Sev 0
+            "sevzero_all" : [
                 "event.time != -999",
-                "event.sevlv == 0"
-                #"event.met_filter{sys}==1" ,
-		#"(event.HLT_PFHT1050{sys}==1) | (event.HLT_PFJet500{sys}==1)",
-	    ],   
+                "event.sevlv == 0",
+                # "event.twrADC > 0"
+	    ],  
 
-            "sevthree" : [
+        #     "sevzero_TPratio_0" : [
+        #         "event.time != -999",
+        #         "event.sevlv == 0", 
+        #         "( (event.twrEmul3ADC / (event.twrADC + 0.000001)) == 0)"
+	    # ],  
+
+        #     "sevzero_TPratio_0_to_0p1" : [
+        #         "event.time != -999",
+        #         "event.sevlv == 0", 
+        #         # "( np.divide(event.twrEmul3ADC, event.twrADC, np.zeros_like(event.twrEmul3ADC), where=event.twrADC!=0 ) < 0.1)"
+        #         # ((event.twrEmul3ADC / (event.twrADC)) > 0)", 
+        #         # "((event.twrEmul3ADC / (event.twrADC )) < 0.1)"
+
+        #         # "( ((event.twrEmul3ADC / (event.twrADC)) > 0)", "((event.twrEmul3ADC / (event.twrADC )) < 0.1)"
+	    # ],   
+
+        #     "sevzero_TPratio_0p1_to_0p2" : [
+        #         "event.time != -999",
+        #         "event.sevlv == 0", 
+        #         "( ((event.twrEmul3ADC / (event.twrADC + 0.000001)) >= 0.1)", "((event.twrEmul3ADC / (event.twrADC + 0.000001)) < 0.2) )"
+	    # ],    
+
+        #     "sevzero_TPratio_0p2_to_0p3" : [
+        #         "event.time != -999",
+        #         "event.sevlv == 0", 
+        #         "( ((event.twrEmul3ADC / (event.twrADC + 0.000001)) >= 0.2)", "((event.twrEmul3ADC / (event.twrADC + 0.000001)) < 0.3) )"
+	    # ],    
+
+        #     "sevzero_TPratio_0p3_to_0p4" : [
+        #         "event.time != -999",
+        #         "event.sevlv == 0", 
+        #         "( ((event.twrEmul3ADC / (event.twrADC + 0.000001)) >= 0.3)", "((event.twrEmul3ADC / (event.twrADC + 0.000001)) < 0.4) )"
+	    # ],    
+
+        #     "sevzero_TPratio_0p4_to_0p5" : [
+        #         "event.time != -999",
+        #         "event.sevlv == 0", 
+        #         "( ((event.twrEmul3ADC / (event.twrADC + 0.000001)) >= 0.4)", "((event.twrEmul3ADC / (event.twrADC + 0.000001)) < 0.5) )"
+	    # ],    
+
+        #     "sevzero_TPratio_0p5_to_0p6" : [
+        #         "event.time != -999",
+        #         "event.sevlv == 0", 
+        #         "( ((event.twrEmul3ADC / (event.twrADC + 0.000001)) >= 0.5)", "((event.twrEmul3ADC / (event.twrADC + 0.000001)) < 0.6) )"
+	    # ],    
+
+        #     "sevzero_TPratio_0p6_to_0p7" : [
+        #         "event.time != -999",
+        #         "event.sevlv == 0", 
+        #         "( ((event.twrEmul3ADC / (event.twrADC + 0.000001)) >= 0.6)", "((event.twrEmul3ADC / (event.twrADC + 0.000001)) < 0.7) )"
+	    # ],  
+
+        #     "sevzero_TPratio_0p7_to_0p8" : [
+        #         "event.time != -999",
+        #         "event.sevlv == 0", 
+        #         "( ((event.twrEmul3ADC / (event.twrADC + 0.000001)) >= 0.7)", "((event.twrEmul3ADC / (event.twrADC + 0.000001)) < 0.8) )"
+	    # ],  
+
+        #     "sevzero_TPratio_0p8_to_0p9" : [
+        #         "event.time != -999",
+        #         "event.sevlv == 0", 
+        #         "( ((event.twrEmul3ADC / (event.twrADC + 0.000001)) >= 0.8)", "((event.twrEmul3ADC / (event.twrADC + 0.000001)) < 0.9) )"
+	    # ],  
+
+        #     "sevzero_TPratio_0p9_to_1p0" : [
+        #         "event.time != -999",
+        #         "event.sevlv == 0", 
+        #         "( ((event.twrEmul3ADC / (event.twrADC + 0.000001)) >= 0.9)", "((event.twrEmul3ADC / (event.twrADC + 0.000001)) < 1.0) )"
+	    # ],   
+
+        #     "sevzero_TPratio_1" : [
+        #         "event.time != -999",
+        #         "event.sevlv == 0", 
+        #         "( ((event.twrEmul3ADC / (event.twrADC + 0.000001)) == 1.0) )"
+	    # ],            
+
+        ##-- Sev 3 
+            "sevthree_all" : [
                 "event.time != -999",
-                "event.sevlv == 3"
-                #"event.met_filter{sys}==1" ,
-		#"(event.HLT_PFHT1050{sys}==1) | (event.HLT_PFJet500{sys}==1)",
-	    ],   
+                "event.sevlv == 3",
+                # "event.twrADC > 0"
+	    ],  
 
-            "sevfour" : [
+        #     "sevthree_TPratio_0" : [
+        #         "event.time != -999",
+        #         "event.sevlv == 3", 
+        #         "( (event.twrEmul3ADC / (event.twrADC + 0.000001)) == 0)"
+	    # ],  
+
+        #     "sevthree_TPratio_0_to_0p1" : [
+        #         "event.time != -999",
+        #         "event.sevlv == 3", 
+        #         "( ((event.twrEmul3ADC / (event.twrADC + 0.000001)) > 0)", "((event.twrEmul3ADC / (event.twrADC + 0.000001)) < 0.1)"
+	    # ],  
+
+        #     "sevthree_TPratio_0p1_to_0p2" : [
+        #         "event.time != -999",
+        #         "event.sevlv == 3", 
+        #         "( ((event.twrEmul3ADC / (event.twrADC + 0.000001)) >= 0.1)", "((event.twrEmul3ADC / (event.twrADC + 0.000001)) < 0.2) )"
+	    # ],    
+
+        #     "sevthree_TPratio_0p2_to_0p3" : [
+        #         "event.time != -999",
+        #         "event.sevlv == 3", 
+        #         "( ((event.twrEmul3ADC / (event.twrADC + 0.000001)) >= 0.2)", "((event.twrEmul3ADC / (event.twrADC + 0.000001)) < 0.3) )"
+	    # ],    
+
+        #     "sevthree_TPratio_0p3_to_0p4" : [
+        #         "event.time != -999",
+        #         "event.sevlv == 3", 
+        #         "( ((event.twrEmul3ADC / (event.twrADC + 0.000001)) >= 0.3)", "((event.twrEmul3ADC / (event.twrADC + 0.000001)) < 0.4) )"
+	    # ],    
+
+        #     "sevthree_TPratio_0p4_to_0p5" : [
+        #         "event.time != -999",
+        #         "event.sevlv == 3", 
+        #         "( ((event.twrEmul3ADC / (event.twrADC + 0.000001)) >= 0.4)", "((event.twrEmul3ADC / (event.twrADC + 0.000001)) < 0.5) )"
+	    # ],    
+
+        #     "sevthree_TPratio_0p5_to_0p6" : [
+        #         "event.time != -999",
+        #         "event.sevlv == 3", 
+        #         "( ((event.twrEmul3ADC / (event.twrADC + 0.000001)) >= 0.5)", "((event.twrEmul3ADC / (event.twrADC + 0.000001)) < 0.6) )"
+	    # ],    
+
+        #     "sevthree_TPratio_0p6_to_0p7" : [
+        #         "event.time != -999",
+        #         "event.sevlv == 3", 
+        #         "( ((event.twrEmul3ADC / (event.twrADC + 0.000001)) >= 0.6)", "((event.twrEmul3ADC / (event.twrADC + 0.000001)) < 0.7) )"
+	    # ],  
+
+        #     "sevthree_TPratio_0p7_to_0p8" : [
+        #         "event.time != -999",
+        #         "event.sevlv == 3", 
+        #         "( ((event.twrEmul3ADC / (event.twrADC + 0.000001)) >= 0.7)", "((event.twrEmul3ADC / (event.twrADC + 0.000001)) < 0.8) )"
+	    # ],  
+
+        #     "sevthree_TPratio_0p8_to_0p9" : [
+        #         "event.time != -999",
+        #         "event.sevlv == 3", 
+        #         "( ((event.twrEmul3ADC / (event.twrADC + 0.000001)) >= 0.8)", "((event.twrEmul3ADC / (event.twrADC + 0.000001)) < 0.9) )"
+	    # ],  
+
+        #     "sevthree_TPratio_0p9_to_1p0" : [
+        #         "event.time != -999",
+        #         "event.sevlv == 3", 
+        #         "( ((event.twrEmul3ADC / (event.twrADC + 0.000001)) >= 0.9)", "((event.twrEmul3ADC / (event.twrADC + 0.000001)) < 1.0) )"
+	    # ],   
+
+        #     "sevthree_TPratio_1" : [
+        #         "event.time != -999",
+        #         "event.sevlv == 3", 
+        #         "( ((event.twrEmul3ADC / (event.twrADC + 0.000001)) == 1.0) )"
+	    # ],        
+
+        ##-- Sev 4 
+            "sevfour_all" : [
                 "event.time != -999",
-                "event.sevlv == 4"
-                #"event.met_filter{sys}==1" ,
-		#"(event.HLT_PFHT1050{sys}==1) | (event.HLT_PFJet500{sys}==1)",
-	    ],                        
+                "event.sevlv == 4",
+                # "event.twrADC > 0"
+	    ],  
+
+        #     "sevfour_TPratio_0" : [
+        #         "event.time != -999",
+        #         "event.sevlv == 4", 
+        #         "( (event.twrEmul3ADC / (event.twrADC + 0.000001)) == 0)"
+	    # ],  
+
+        #     "sevfour_TPratio_0_to_0p1" : [
+        #         "event.time != -999",
+        #         "event.sevlv == 4", 
+        #         "( ((event.twrEmul3ADC / (event.twrADC + 0.000001)) > 0)", "((event.twrEmul3ADC / (event.twrADC + 0.000001)) < 0.1)"
+	    # ],  
+
+        #     "sevfour_TPratio_0p1_to_0p2" : [
+        #         "event.time != -999",
+        #         "event.sevlv == 4", 
+        #         "( ((event.twrEmul3ADC / (event.twrADC + 0.000001)) >= 0.1)", "((event.twrEmul3ADC / (event.twrADC + 0.000001)) < 0.2) )"
+	    # ],    
+
+        #     "sevfour_TPratio_0p2_to_0p3" : [
+        #         "event.time != -999",
+        #         "event.sevlv == 4", 
+        #         "( ((event.twrEmul3ADC / (event.twrADC + 0.000001)) >= 0.2)", "((event.twrEmul3ADC / (event.twrADC + 0.000001)) < 0.3) )"
+	    # ],    
+
+        #     "sevfour_TPratio_0p3_to_0p4" : [
+        #         "event.time != -999",
+        #         "event.sevlv == 4", 
+        #         "( ((event.twrEmul3ADC / (event.twrADC + 0.000001)) >= 0.3)", "((event.twrEmul3ADC / (event.twrADC + 0.000001)) < 0.4) )"
+	    # ],    
+
+        #     "sevfour_TPratio_0p4_to_0p5" : [
+        #         "event.time != -999",
+        #         "event.sevlv == 4", 
+        #         "( ((event.twrEmul3ADC / (event.twrADC + 0.000001)) >= 0.4)", "((event.twrEmul3ADC / (event.twrADC + 0.000001)) < 0.5) )"
+	    # ],    
+
+        #     "sevfour_TPratio_0p5_to_0p6" : [
+        #         "event.time != -999",
+        #         "event.sevlv == 4", 
+        #         "( ((event.twrEmul3ADC / (event.twrADC + 0.000001)) >= 0.5)", "((event.twrEmul3ADC / (event.twrADC + 0.000001)) < 0.6) )"
+	    # ],    
+
+        #     "sevfour_TPratio_0p6_to_0p7" : [
+        #         "event.time != -999",
+        #         "event.sevlv == 4", 
+        #         "( ((event.twrEmul3ADC / (event.twrADC + 0.000001)) >= 0.6)", "((event.twrEmul3ADC / (event.twrADC + 0.000001)) < 0.7) )"
+	    # ],  
+
+        #     "sevfour_TPratio_0p7_to_0p8" : [
+        #         "event.time != -999",
+        #         "event.sevlv == 4", 
+        #         "( ((event.twrEmul3ADC / (event.twrADC + 0.000001)) >= 0.7)", "((event.twrEmul3ADC / (event.twrADC + 0.000001)) < 0.8) )"
+	    # ],  
+
+        #     "sevfour_TPratio_0p8_to_0p9" : [
+        #         "event.time != -999",
+        #         "event.sevlv == 4", 
+        #         "( ((event.twrEmul3ADC / (event.twrADC + 0.000001)) >= 0.8)", "((event.twrEmul3ADC / (event.twrADC + 0.000001)) < 0.9) )"
+	    # ],  
+
+        #     "sevfour_TPratio_0p9_to_1p0" : [
+        #         "event.time != -999",
+        #         "event.sevlv == 4", 
+        #         "( ((event.twrEmul3ADC / (event.twrADC + 0.000001)) >= 0.9)", "((event.twrEmul3ADC / (event.twrADC + 0.000001)) < 1.0) )"
+	    # ],   
+
+        #     "sevfour_TPratio_1" : [
+        #         "event.time != -999",
+        #         "event.sevlv == 4", 
+        #         "( ((event.twrEmul3ADC / (event.twrADC + 0.000001)) == 1.0) )"
+	    # ],  
 
 
-        #     "basic" : [
-        #         "event.nCleaned_Cands{sys} > 0"
-        #         #"event.met_filter{sys}==1" ,
-		# #"(event.HLT_PFHT1050{sys}==1) | (event.HLT_PFJet500{sys}==1)",
-	    # ],
-        #     "nconst_85" : [
-        #         #"event.met_filter{sys}==1" ,
-        #         #"(event.HLT_PFHT1050{sys}==1) | (event.HLT_PFJet500{sys}==1)",
-		# "event.nCleaned_Cands{sys} > 85"
-        #     ],
-        #     "nconst_100" : [
-        #         #"event.met_filter{sys}==1" ,
-        #         #"(event.HLT_PFHT1050{sys}==1) | (event.HLT_PFJet500{sys}==1)",
-        #         "event.nCleaned_Cands{sys} > 100"
-        #     ],
-        #     "nconst_150" : [
-        #         #"event.met_filter{sys}==1" ,
-        #         #"(event.HLT_PFHT1050{sys}==1) | (event.HLT_PFJet500{sys}==1)",
-        #         "event.nCleaned_Cands{sys} > 150"
-        #     ],
-        #     "nconst_175" : [
-        #         #"event.met_filter{sys}==1" ,
-        #         #"(event.HLT_PFHT1050{sys}==1) | (event.HLT_PFJet500{sys}==1)",
-        #         "event.nCleaned_Cands{sys} > 175"
-        #     ],
-        #     "nconst_200" : [
-        #         #"event.met_filter{sys}==1" ,
-        #         #"(event.HLT_PFHT1050{sys}==1) | (event.HLT_PFJet500{sys}==1)",
-        #         "event.nCleaned_Cands{sys} > 200"
-        #     ],
-        #     "nconst_250" : [
-        #         #"event.met_filter{sys}==1" ,
-        #        # "(event.HLT_PFHT1050{sys}==1) | (event.HLT_PFJet500{sys}==1)",
-        #         "event.nCleaned_Cands{sys} > 250"
-        #     ],
+        #     "sevzerotagged" : [
+        #         "event.time != -999",
+        #         "event.sevlv == 0",
+        #         "(event.twrEmul3ADC < event.twrADC)" ##-- Emulated TP ADC is less. This means at least some was zeroed
+	    # ],   
+
+        #     "sevthreetagged" : [
+        #         "event.time != -999",
+        #         "event.sevlv == 3",
+        #         "(event.twrEmul3ADC < event.twrADC)"
+	    # ],   
+
+        #     "sevfourtagged" : [
+        #         "event.time != -999",
+        #         "event.sevlv == 4",
+        #         "(event.twrEmul3ADC < event.twrADC)"
+	    # ],                                
+
         }
 
 
@@ -428,4 +528,5 @@ class SUEP_NTuple(WSProducer):
         return weight
 
     def naming_schema(self, name, region):
-        return f'{name}_{self.sample}_{region}{self.syst_suffix}'
+        return f'{name}_{region}{self.syst_suffix}'
+        # return f'{name}_{self.sample}_{region}{self.syst_suffix}'
