@@ -10,10 +10,15 @@ Steps to perform ETT (ECAL Trigger Team) analysis with ETTAnalyzer files:
     cmsenv
     git clone git@github.com:atishelmanch/SUEPCoffea.git
     cd SUEPCoffea
+    
+To run over one file:
+
+    python3 condor_SUEP_WS.py --isMC=0 --era=2018 --infile="ETTAnalyzer_output_55.root" --treename="tuplizer/ETTAnalyzerTree"
+    
+To run over a directory of files:
+
     singularity shell -B ${PWD} -B /afs -B /eos /cvmfs/unpacked.cern.ch/registry.hub.docker.com/coffeateam/coffea-dask:latest ##-- Mount /afs and /eos space to run on files in those locations. https://hsf-training.github.io/hsf-training-docker/10-singularity/index.html
     python3 condor_SUEP_WS.py --isMC=0 --era=2018 --inDir="/eos/user/a/atishelm/ntuples/Run3_Zeroing/ZeroBias/ETTAnalyzer_CMSSW_11_3_0/210601_054955/0000/" --treename="tuplizer/ETTAnalyzerTree"
-  
-  
 
 ## Quick start
 ```bash
