@@ -56,24 +56,27 @@ class WSProducer(ProcessorABC):
 
         # weight = self.weighting(df)
 
-        ##-- 1d histograms 
+        # ##-- 1d histograms 
+        # for h, hist in list(self.histograms.items()):
+        #     for region in hist['region']:
+
+        #         name = self.naming_schema(hist['name'], region)
+        #         selec = self.passbut(df, hist['target'], region)
+
+        #         selectedValues = np.hstack(ak.to_list(df[hist['target']][selec])).flatten()
+
+        #         output[name].fill(**{
+        #             # 'weight': weight[selec],
+        #             name: selectedValues
+        #         })   
+
+        ##-- 2d histograms 
         for h, hist in list(self.histograms.items()):
             for region in hist['region']:
 
                 name = self.naming_schema(hist['name'], region)
                 selec = self.passbut(df, hist['target_x'], region) ##-- Should the selection depend on target?
                 # selec = self.passbut(df, region)
-
-                # print("values:",df[hist['target']])
-                # print("target:",hist['target'])
-                # print("region:",region)
-                # print("selec:",selec)
-
-                # selectedValues = np.hstack(ak.to_list(df[hist['target']][selec])).flatten()
-
-                # print("x:",hist['target_x'])
-                # print("y:",hist['target_y'])
-                # print("")
 
                 xax_lab = hist['target_x']
                 yax_lab = hist['target_y']
@@ -88,55 +91,6 @@ class WSProducer(ProcessorABC):
                 }
                 )
 
-                # output[name].fill(
-                    
-                #     hist['target_x'] = xVals,
-                #     hist['target_y'] = yVals 
-                    # x = xVals,
-                    # y = yVals                      
-
-                
-
-                # output[name].fill(**{
-                    
-                #     hist['target_x'] : xVals,
-                #     hist['target_y'] : yVals  
-
-                # }
-                    # **{
-                    # 'weight': weight[selec],
-                  
-                  
-                    # name: selectedValues
-                  
-                  
-                    # name: df[hist['target']][selec]
-                    # name: df[hist['target']][selec].array().flatten()
-                    # name: df[hist['target']][selec]#.flatten()
-                    # name: df[hist['target']][selec].flatten()
-                # }
-                
-                
-                # )
-
-        # ##-- 2d histograms 
-        # for h, hist in list(self.twoD_histograms.items()):
-        #     for region in hist['region']:
-
-        #         name = self.naming_schema(hist['name'], region)
-        #         selec = self.passbut(df, hist['target'], region)
-
-        #         selectedValues = np.hstack(ak.to_list(df[hist['target']][selec])).flatten()
-
-        #         output[name].fill(**{
-        #             # 'weight': weight[selec],
-        #             name: selectedValues
-        #             # name: df[hist['target']][selec]
-        #             # name: df[hist['target']][selec].array().flatten()
-        #             # name: df[hist['target']][selec]#.flatten()
-        #             # name: df[hist['target']][selec].flatten()
-        #         })            
-
         return output
 
     def postprocess(self, accumulator):
@@ -147,12 +101,41 @@ class WSProducer(ProcessorABC):
         return eval('&'.join('(' + cut.format(sys=('' if self.weight_syst else self.syst_suffix)) + ')' for cut in self.selection[cat] ))#if excut not in cut))
 
 class SUEP_NTuple(WSProducer):
+    # emin = 32
+    emin = 0
     histograms = {
 
         # 'time': {
         #     'target': 'time',
         #     'name': 'time', 
-        #     'region': ['sevzero_all', 'sevthree_all', 'sevfour_all'],
+        #     # 'region': ['sevzero_all', 'sevthree_all', 'sevfour_all', 'sevzero_MostlyZeroed', 'sevthree_MostlyZeroed', 'sevfour_MostlyZeroed'],
+        #     # 'region': ['sevall_all', 'sevall_MostlyZeroed', 'sevzero_all', 'sevthree_all', 'sevfour_all', 'sevzero_MostlyZeroed', 'sevthree_MostlyZeroed', 'sevfour_MostlyZeroed'],
+        #     # 'region': ['sevzero_all', 'sevfour_all', 'sevzero_MostlyZeroed', 'sevfour_MostlyZeroed'],
+        #     # 'axis': {'label': 'time', 'n_or_arr': 120, 'lo': -225, 'hi': 125}
+        #     'axis': {'label': 'time', 'n_or_arr': 120, 'lo': -225, 'hi': 125}
+        # }, 
+
+        # 'twrADC': {
+        #     'target': 'twrADC',
+        #     'name': 'twrADC', 
+        #     # 'region': ['sevzero_all', 'sevthree_all', 'sevfour_all', 'sevzero_MostlyZeroed', 'sevthree_MostlyZeroed', 'sevfour_MostlyZeroed'],
+        #     # 'region': ['sevall_all', 'sevall_MostlyZeroed', 'sevzero_all', 'sevthree_all', 'sevfour_all', 'sevzero_MostlyZeroed', 'sevthree_MostlyZeroed', 'sevfour_MostlyZeroed'],
+        #     'region': ['sevzero_all', 'sevthree_all', 'sevfour_all', 'sevzero_MostlyZeroed', 'sevthree_MostlyZeroed', 'sevfour_MostlyZeroed'],
+        #     'axis': {'label': 'twrADC', 'n_or_arr': 256, 'lo': 0, 'hi': 256}
+        # }, 
+
+        # 'twrEmul3ADC': {
+        #     'target': 'twrADC',
+        #     'name': 'twrADC', 
+        #     # 'region': ['sevzero_all', 'sevthree_all', 'sevfour_all', 'sevzero_MostlyZeroed', 'sevthree_MostlyZeroed', 'sevfour_MostlyZeroed'],
+        #     'region': ['sevall_all', 'sevall_MostlyZeroed', 'sevzero_all', 'sevthree_all', 'sevfour_all', 'sevzero_MostlyZeroed', 'sevthree_MostlyZeroed', 'sevfour_MostlyZeroed'],
+        #     'axis': {'label': 'twrADC', 'n_or_arr': 256, 'lo': 0, 'hi': 256}
+        # },                 
+
+        # 'time': {
+        #     'target': 'time',
+        #     'name': 'time', 
+        #     'region': ['sevzero_all', 'sevthree_all', 'sevfour_all', 'sevzero_MostlyZeroed', 'sevthree_MostlyZeroed', 'sevfour_MostlyZeroed'],
         #     'axes' : {
         #         'xaxis': {'label': 'time', 'n_or_arr': 120, 'lo': -225, 'hi': 125},
         #         'yaxis': {'label': 'time', 'n_or_arr': 120, 'lo': -225, 'hi': 125}
@@ -160,20 +143,35 @@ class SUEP_NTuple(WSProducer):
 
         # },
 
-        'twod': {
+        # 'realVsEmu': {
+        #     # 'target': { 'x': 'twrADC', 'y' : 'twrEmul3ADC'},
+        #     'target_x' : 'twrEmul3ADC',
+        #     'target_y' : 'twrADC',
+        #     'name': 'realVsEmu', 
+        #     'region': ['sevzero_all', 'sevthree_all', 'sevfour_all', 'sevzero_MostlyZeroed', 'sevthree_MostlyZeroed', 'sevfour_MostlyZeroed'],
+        #     'axes' : {
+        #         # 'xaxis': {'label': 'twrEmul3ADC', 'n_or_arr': 256, 'lo': 0, 'hi': 256},
+        #         # 'yaxis': {'label': 'twrADC', 'n_or_arr': 256, 'lo': 0, 'hi': 256}
+        #         'xaxis': {'label': 'twrEmul3ADC', 'n_or_arr': 256, 'lo': 0, 'hi': 256},
+        #         'yaxis': {'label': 'twrADC', 'n_or_arr': 256, 'lo': 0, 'hi': 256}                
+        #     }
+
+        # },  
+
+        'realTPVsTime': {
             # 'target': { 'x': 'twrADC', 'y' : 'twrEmul3ADC'},
-            'target_x' : 'twrEmul3ADC',
+            'target_x' : 'time',
             'target_y' : 'twrADC',
-            'name': 'twod', 
-            'region': ['sevzero_all', 'sevthree_all', 'sevfour_all'],
+            'name': 'realTPVsTime', 
+            'region': ['sevzero_all', 'sevthree_all', 'sevfour_all', 'sevzero_MostlyZeroed', 'sevthree_MostlyZeroed', 'sevfour_MostlyZeroed'],
             'axes' : {
                 # 'xaxis': {'label': 'twrEmul3ADC', 'n_or_arr': 256, 'lo': 0, 'hi': 256},
                 # 'yaxis': {'label': 'twrADC', 'n_or_arr': 256, 'lo': 0, 'hi': 256}
-                'xaxis': {'label': 'twrEmul3ADC', 'n_or_arr': 256, 'lo': 0, 'hi': 256},
+                'xaxis': {'label': 'time', 'n_or_arr': 120, 'lo': -225, 'hi': 125},
                 'yaxis': {'label': 'twrADC', 'n_or_arr': 256, 'lo': 0, 'hi': 256}                
             }
 
-        },        
+        },                
 
         # ''
 
@@ -240,281 +238,58 @@ class SUEP_NTuple(WSProducer):
         #     'axis': {'label': 'twrADC', 'n_or_arr': 256, 'lo': 0, 'hi': 256}
         # },                                         
 
-    # }
-
-    # twoD_histograms = {
-    #     'realVsEmu': {
-    #           'xvar' : 'twrADC',
-    #           'yvar' : 'twrEmul3ADC',
-    # #         'target': 'twrEmul3ADC:twrADC',
-    #           'name': 'realVsEmu', 
-    #         'region': ['sevzero'],
-    #         'axis': {'label': 'realVsEmu', 'n_or_arr': 256, 'lo': 0, 'hi': 256}
-    #     },    
+    # }   
 
     }
 
     selection = {
 
+        ##-- All 
+            "sevall_all" : [
+                "event.sevlv != -999",
+                "event.twrADC > %s"%(emin)
+	    ],  
+            "sevall_MostlyZeroed" : [
+                "event.sevlv != -999",
+                "event.twrADC > %s"%(emin),
+                "(event.twrEmul3ADC) < (event.twrADC * 0.1)",
+	    ],          
+
         ##-- Sev 0
             "sevzero_all" : [
-                "event.time != -999",
                 "event.sevlv == 0",
-                # "event.twrADC > 0"
+                "event.twrADC > %s"%(emin)
 	    ],  
 
-        #     "sevzero_TPratio_0" : [
-        #         "event.time != -999",
-        #         "event.sevlv == 0", 
-        #         "( (event.twrEmul3ADC / (event.twrADC + 0.000001)) == 0)"
-	    # ],  
-
-        #     "sevzero_TPratio_0_to_0p1" : [
-        #         "event.time != -999",
-        #         "event.sevlv == 0", 
-        #         # "( np.divide(event.twrEmul3ADC, event.twrADC, np.zeros_like(event.twrEmul3ADC), where=event.twrADC!=0 ) < 0.1)"
-        #         # ((event.twrEmul3ADC / (event.twrADC)) > 0)", 
-        #         # "((event.twrEmul3ADC / (event.twrADC )) < 0.1)"
-
-        #         # "( ((event.twrEmul3ADC / (event.twrADC)) > 0)", "((event.twrEmul3ADC / (event.twrADC )) < 0.1)"
-	    # ],   
-
-        #     "sevzero_TPratio_0p1_to_0p2" : [
-        #         "event.time != -999",
-        #         "event.sevlv == 0", 
-        #         "( ((event.twrEmul3ADC / (event.twrADC + 0.000001)) >= 0.1)", "((event.twrEmul3ADC / (event.twrADC + 0.000001)) < 0.2) )"
-	    # ],    
-
-        #     "sevzero_TPratio_0p2_to_0p3" : [
-        #         "event.time != -999",
-        #         "event.sevlv == 0", 
-        #         "( ((event.twrEmul3ADC / (event.twrADC + 0.000001)) >= 0.2)", "((event.twrEmul3ADC / (event.twrADC + 0.000001)) < 0.3) )"
-	    # ],    
-
-        #     "sevzero_TPratio_0p3_to_0p4" : [
-        #         "event.time != -999",
-        #         "event.sevlv == 0", 
-        #         "( ((event.twrEmul3ADC / (event.twrADC + 0.000001)) >= 0.3)", "((event.twrEmul3ADC / (event.twrADC + 0.000001)) < 0.4) )"
-	    # ],    
-
-        #     "sevzero_TPratio_0p4_to_0p5" : [
-        #         "event.time != -999",
-        #         "event.sevlv == 0", 
-        #         "( ((event.twrEmul3ADC / (event.twrADC + 0.000001)) >= 0.4)", "((event.twrEmul3ADC / (event.twrADC + 0.000001)) < 0.5) )"
-	    # ],    
-
-        #     "sevzero_TPratio_0p5_to_0p6" : [
-        #         "event.time != -999",
-        #         "event.sevlv == 0", 
-        #         "( ((event.twrEmul3ADC / (event.twrADC + 0.000001)) >= 0.5)", "((event.twrEmul3ADC / (event.twrADC + 0.000001)) < 0.6) )"
-	    # ],    
-
-        #     "sevzero_TPratio_0p6_to_0p7" : [
-        #         "event.time != -999",
-        #         "event.sevlv == 0", 
-        #         "( ((event.twrEmul3ADC / (event.twrADC + 0.000001)) >= 0.6)", "((event.twrEmul3ADC / (event.twrADC + 0.000001)) < 0.7) )"
-	    # ],  
-
-        #     "sevzero_TPratio_0p7_to_0p8" : [
-        #         "event.time != -999",
-        #         "event.sevlv == 0", 
-        #         "( ((event.twrEmul3ADC / (event.twrADC + 0.000001)) >= 0.7)", "((event.twrEmul3ADC / (event.twrADC + 0.000001)) < 0.8) )"
-	    # ],  
-
-        #     "sevzero_TPratio_0p8_to_0p9" : [
-        #         "event.time != -999",
-        #         "event.sevlv == 0", 
-        #         "( ((event.twrEmul3ADC / (event.twrADC + 0.000001)) >= 0.8)", "((event.twrEmul3ADC / (event.twrADC + 0.000001)) < 0.9) )"
-	    # ],  
-
-        #     "sevzero_TPratio_0p9_to_1p0" : [
-        #         "event.time != -999",
-        #         "event.sevlv == 0", 
-        #         "( ((event.twrEmul3ADC / (event.twrADC + 0.000001)) >= 0.9)", "((event.twrEmul3ADC / (event.twrADC + 0.000001)) < 1.0) )"
-	    # ],   
-
-        #     "sevzero_TPratio_1" : [
-        #         "event.time != -999",
-        #         "event.sevlv == 0", 
-        #         "( ((event.twrEmul3ADC / (event.twrADC + 0.000001)) == 1.0) )"
-	    # ],            
+            "sevzero_MostlyZeroed" : [
+                "event.sevlv == 0",
+                "(event.twrEmul3ADC) < (event.twrADC * 0.1)",
+                "event.twrADC > %s"%(emin)
+	    ],                  
 
         ##-- Sev 3 
             "sevthree_all" : [
-                "event.time != -999",
                 "event.sevlv == 3",
-                # "event.twrADC > 0"
+                "event.twrADC > %s"%(emin)
 	    ],  
 
-        #     "sevthree_TPratio_0" : [
-        #         "event.time != -999",
-        #         "event.sevlv == 3", 
-        #         "( (event.twrEmul3ADC / (event.twrADC + 0.000001)) == 0)"
-	    # ],  
-
-        #     "sevthree_TPratio_0_to_0p1" : [
-        #         "event.time != -999",
-        #         "event.sevlv == 3", 
-        #         "( ((event.twrEmul3ADC / (event.twrADC + 0.000001)) > 0)", "((event.twrEmul3ADC / (event.twrADC + 0.000001)) < 0.1)"
-	    # ],  
-
-        #     "sevthree_TPratio_0p1_to_0p2" : [
-        #         "event.time != -999",
-        #         "event.sevlv == 3", 
-        #         "( ((event.twrEmul3ADC / (event.twrADC + 0.000001)) >= 0.1)", "((event.twrEmul3ADC / (event.twrADC + 0.000001)) < 0.2) )"
-	    # ],    
-
-        #     "sevthree_TPratio_0p2_to_0p3" : [
-        #         "event.time != -999",
-        #         "event.sevlv == 3", 
-        #         "( ((event.twrEmul3ADC / (event.twrADC + 0.000001)) >= 0.2)", "((event.twrEmul3ADC / (event.twrADC + 0.000001)) < 0.3) )"
-	    # ],    
-
-        #     "sevthree_TPratio_0p3_to_0p4" : [
-        #         "event.time != -999",
-        #         "event.sevlv == 3", 
-        #         "( ((event.twrEmul3ADC / (event.twrADC + 0.000001)) >= 0.3)", "((event.twrEmul3ADC / (event.twrADC + 0.000001)) < 0.4) )"
-	    # ],    
-
-        #     "sevthree_TPratio_0p4_to_0p5" : [
-        #         "event.time != -999",
-        #         "event.sevlv == 3", 
-        #         "( ((event.twrEmul3ADC / (event.twrADC + 0.000001)) >= 0.4)", "((event.twrEmul3ADC / (event.twrADC + 0.000001)) < 0.5) )"
-	    # ],    
-
-        #     "sevthree_TPratio_0p5_to_0p6" : [
-        #         "event.time != -999",
-        #         "event.sevlv == 3", 
-        #         "( ((event.twrEmul3ADC / (event.twrADC + 0.000001)) >= 0.5)", "((event.twrEmul3ADC / (event.twrADC + 0.000001)) < 0.6) )"
-	    # ],    
-
-        #     "sevthree_TPratio_0p6_to_0p7" : [
-        #         "event.time != -999",
-        #         "event.sevlv == 3", 
-        #         "( ((event.twrEmul3ADC / (event.twrADC + 0.000001)) >= 0.6)", "((event.twrEmul3ADC / (event.twrADC + 0.000001)) < 0.7) )"
-	    # ],  
-
-        #     "sevthree_TPratio_0p7_to_0p8" : [
-        #         "event.time != -999",
-        #         "event.sevlv == 3", 
-        #         "( ((event.twrEmul3ADC / (event.twrADC + 0.000001)) >= 0.7)", "((event.twrEmul3ADC / (event.twrADC + 0.000001)) < 0.8) )"
-	    # ],  
-
-        #     "sevthree_TPratio_0p8_to_0p9" : [
-        #         "event.time != -999",
-        #         "event.sevlv == 3", 
-        #         "( ((event.twrEmul3ADC / (event.twrADC + 0.000001)) >= 0.8)", "((event.twrEmul3ADC / (event.twrADC + 0.000001)) < 0.9) )"
-	    # ],  
-
-        #     "sevthree_TPratio_0p9_to_1p0" : [
-        #         "event.time != -999",
-        #         "event.sevlv == 3", 
-        #         "( ((event.twrEmul3ADC / (event.twrADC + 0.000001)) >= 0.9)", "((event.twrEmul3ADC / (event.twrADC + 0.000001)) < 1.0) )"
-	    # ],   
-
-        #     "sevthree_TPratio_1" : [
-        #         "event.time != -999",
-        #         "event.sevlv == 3", 
-        #         "( ((event.twrEmul3ADC / (event.twrADC + 0.000001)) == 1.0) )"
-	    # ],        
+            "sevthree_MostlyZeroed" : [
+                "event.sevlv == 3",
+                "(event.twrEmul3ADC) < (event.twrADC * 0.1)",
+                "event.twrADC > %s"%(emin)
+	    ],           
 
         ##-- Sev 4 
             "sevfour_all" : [
-                "event.time != -999",
                 "event.sevlv == 4",
-                # "event.twrADC > 0"
+                "event.twrADC > %s"%(emin)
 	    ],  
 
-        #     "sevfour_TPratio_0" : [
-        #         "event.time != -999",
-        #         "event.sevlv == 4", 
-        #         "( (event.twrEmul3ADC / (event.twrADC + 0.000001)) == 0)"
-	    # ],  
-
-        #     "sevfour_TPratio_0_to_0p1" : [
-        #         "event.time != -999",
-        #         "event.sevlv == 4", 
-        #         "( ((event.twrEmul3ADC / (event.twrADC + 0.000001)) > 0)", "((event.twrEmul3ADC / (event.twrADC + 0.000001)) < 0.1)"
-	    # ],  
-
-        #     "sevfour_TPratio_0p1_to_0p2" : [
-        #         "event.time != -999",
-        #         "event.sevlv == 4", 
-        #         "( ((event.twrEmul3ADC / (event.twrADC + 0.000001)) >= 0.1)", "((event.twrEmul3ADC / (event.twrADC + 0.000001)) < 0.2) )"
-	    # ],    
-
-        #     "sevfour_TPratio_0p2_to_0p3" : [
-        #         "event.time != -999",
-        #         "event.sevlv == 4", 
-        #         "( ((event.twrEmul3ADC / (event.twrADC + 0.000001)) >= 0.2)", "((event.twrEmul3ADC / (event.twrADC + 0.000001)) < 0.3) )"
-	    # ],    
-
-        #     "sevfour_TPratio_0p3_to_0p4" : [
-        #         "event.time != -999",
-        #         "event.sevlv == 4", 
-        #         "( ((event.twrEmul3ADC / (event.twrADC + 0.000001)) >= 0.3)", "((event.twrEmul3ADC / (event.twrADC + 0.000001)) < 0.4) )"
-	    # ],    
-
-        #     "sevfour_TPratio_0p4_to_0p5" : [
-        #         "event.time != -999",
-        #         "event.sevlv == 4", 
-        #         "( ((event.twrEmul3ADC / (event.twrADC + 0.000001)) >= 0.4)", "((event.twrEmul3ADC / (event.twrADC + 0.000001)) < 0.5) )"
-	    # ],    
-
-        #     "sevfour_TPratio_0p5_to_0p6" : [
-        #         "event.time != -999",
-        #         "event.sevlv == 4", 
-        #         "( ((event.twrEmul3ADC / (event.twrADC + 0.000001)) >= 0.5)", "((event.twrEmul3ADC / (event.twrADC + 0.000001)) < 0.6) )"
-	    # ],    
-
-        #     "sevfour_TPratio_0p6_to_0p7" : [
-        #         "event.time != -999",
-        #         "event.sevlv == 4", 
-        #         "( ((event.twrEmul3ADC / (event.twrADC + 0.000001)) >= 0.6)", "((event.twrEmul3ADC / (event.twrADC + 0.000001)) < 0.7) )"
-	    # ],  
-
-        #     "sevfour_TPratio_0p7_to_0p8" : [
-        #         "event.time != -999",
-        #         "event.sevlv == 4", 
-        #         "( ((event.twrEmul3ADC / (event.twrADC + 0.000001)) >= 0.7)", "((event.twrEmul3ADC / (event.twrADC + 0.000001)) < 0.8) )"
-	    # ],  
-
-        #     "sevfour_TPratio_0p8_to_0p9" : [
-        #         "event.time != -999",
-        #         "event.sevlv == 4", 
-        #         "( ((event.twrEmul3ADC / (event.twrADC + 0.000001)) >= 0.8)", "((event.twrEmul3ADC / (event.twrADC + 0.000001)) < 0.9) )"
-	    # ],  
-
-        #     "sevfour_TPratio_0p9_to_1p0" : [
-        #         "event.time != -999",
-        #         "event.sevlv == 4", 
-        #         "( ((event.twrEmul3ADC / (event.twrADC + 0.000001)) >= 0.9)", "((event.twrEmul3ADC / (event.twrADC + 0.000001)) < 1.0) )"
-	    # ],   
-
-        #     "sevfour_TPratio_1" : [
-        #         "event.time != -999",
-        #         "event.sevlv == 4", 
-        #         "( ((event.twrEmul3ADC / (event.twrADC + 0.000001)) == 1.0) )"
-	    # ],  
-
-
-        #     "sevzerotagged" : [
-        #         "event.time != -999",
-        #         "event.sevlv == 0",
-        #         "(event.twrEmul3ADC < event.twrADC)" ##-- Emulated TP ADC is less. This means at least some was zeroed
-	    # ],   
-
-        #     "sevthreetagged" : [
-        #         "event.time != -999",
-        #         "event.sevlv == 3",
-        #         "(event.twrEmul3ADC < event.twrADC)"
-	    # ],   
-
-        #     "sevfourtagged" : [
-        #         "event.time != -999",
-        #         "event.sevlv == 4",
-        #         "(event.twrEmul3ADC < event.twrADC)"
-	    # ],                                
+            "sevfour_MostlyZeroed" : [
+                "event.sevlv == 4",
+                "(event.twrEmul3ADC) < (event.twrADC * 0.1)",
+                "event.twrADC > %s"%(emin)
+	    ],          
 
         }
 

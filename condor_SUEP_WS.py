@@ -22,7 +22,7 @@ parser.add_argument('--isMC', type=int, default=1, help="")
 parser.add_argument('--jobNum', type=int, default=1, help="")
 parser.add_argument('--era', type=str, default="2018", help="")
 parser.add_argument('--doSyst', type=int, default=1, help="")
-parser.add_argument('--infile', type=str, default=None, help="")
+parser.add_argument('--infile', type=str, default="", help="")
 parser.add_argument('--dataset', type=str, default="X", help="")
 parser.add_argument('--nevt', type=str, default=-1, help="")
 parser.add_argument('--treename', type=str, default="Events", help="")
@@ -95,16 +95,16 @@ if options.isMC and options.doSyst==1:
 for i in modules_era:
     print("modules : ", i)
 
-# files = ["%s/%s"%(options.inDir,f) for f in os.listdir(options.inDir) if f.endswith(".root")]
+if(options.infile != ""):
+    files = [options.infile]
+else:
+    files = ["%s/%s"%(options.inDir,f) for f in os.listdir(options.inDir) if f.endswith(".root")]
 
 # print("Selection : ", pre_selection)
-tstart = time.time()
 f = uproot.recreate("tree_%s_WS.root" % str(options.jobNum))
 for instance in modules_era:
     output = run_uproot_job(
-        # {instance.sample: files},
-        {instance.sample: [options.infile]},
-        # treename='Events',
+        {instance.sample: files},
         treename=options.treename,
         processor_instance=instance,
         executor=futures_executor,
@@ -112,27 +112,90 @@ for instance in modules_era:
         chunksize=500000
     )
 
-    ##-- https://coffeateam.github.io/coffea/notebooks/histograms.html
-    ##-- http://github.com/CoffeaTeam/coffea/blob/515877fa55e914ef82f51f686d1a0eaa9f0f71d1/coffea/hist/hist_tools.py#L903
+    # ##-- 1d histograms 
+    # for h, hist in output.items():
+    #     # ax = plot2d(hist, xaxis = 'time_sevzero_all')
+    #     # ax.figure.savefig('plot.png')
+    #     # ax.figure.savefig('plot.pdf')
+
+    #     # print("h:",h)
+    #     # print("hist:",hist)
+    #     # f[h] = plot2d(hist, xaxis = 'time_QCD_sevzero_all')
+    #     f[h] = export1d(hist) ##-- for 1d histogram exporting to output root file 
+    #     print(f'wrote {h} to tree_{options.jobNum}_WS.root')
+
+    # ##-- 2d histograms 
+
+    # ##-- https://coffeateam.github.io/coffea/notebooks/histograms.html
+    # ##-- http://github.com/CoffeaTeam/coffea/blob/515877fa55e914ef82f51f686d1a0eaa9f0f71d1/coffea/hist/hist_tools.py#L903
+    # for h, hist in output.items():
+
+    #     ##-- 2d histogram processing 
+    #     xaxis = hist.axes()[0]
+    #     histName = "%s_2d"%(h)
+    #     ax = plot2d(
+    #         hist, 
+    #         xaxis = xaxis,
+    #         patch_opts = dict(
+    #             cmap = 'jet',
+    #             norm = LogNorm(vmin = 1)
+    #             )
+    #         )
+
+    #     ax.set_ylim(0.1, 256)
+    #     ax.set_xlim(0.1, 256)
+    #     ax.set_yscale('log')
+    #     ax.set_xscale('log')
+
+    #     ax.plot([0.1, 256], [0.1, 256], linestyle = '--', color = 'black', linewidth = 1)
+
+    #     fig = ax.figure
+
+    #     ol = "/eos/user/a/atishelm/www/EcalL1Optimization/ZeroBias/"
+
+    #     ##-- Pickle the axis for post-processing changes 
+    #     pickle.dump( ax, open( '%s/%s.p'%(ol, histName), "wb" ))
+
+    #     ##-- Save output plots         
+    #     fig.savefig('%s/%s.png'%(ol, histName))
+    #     fig.savefig('%s/%s.pdf'%(ol, histName))
+
+    #     print("Saved plot %s/%s.png"%(ol, histName))
+    #     print("Saved plot %s/%s.pdf"%(ol, histName))
+
+    #     ##-- To open 
+    #     # X_train_EB_reshape_loaded = pickle.load( open( "X_train_EB_reshape_pt%s.p"%(sample), "rb" ) )
+        
+    #     # ax.figure.savefig('plot.png')
+    #     # ax.figure.savefig('plot.pdf')
+    #     # print("h:",h)
+    #     # print("hist:",hist)        
+    #     # f[h] = export1d(hist) ##-- for 1d histogram exporting to output root file 
+    #     # f[h] = plot2d(hist, xaxis = 'time_QCD_sevzero_all')
+    #     # f[h] = plot2d(hist)
+    #     # print(f'wrote {h} to tree_{options.jobNum}_WS.root')
+
+
     for h, hist in output.items():
 
+        ##-- 2d histogram processing 
         xaxis = hist.axes()[0]
         histName = "%s_2d"%(h)
         ax = plot2d(
             hist, 
             xaxis = xaxis,
-            # patch_opts 
             patch_opts = dict(
-                vmin = 1,
                 cmap = 'jet',
-                norm = LogNorm()
+                norm = LogNorm(vmin = 1)
                 )
             )
 
-        ax.set_ylim(0, 256)
-        ax.set_xlim(0, 256)
+        ax.set_ylim(0.1, 256)
+        # ax.set_xlim(0.1, 256)
         ax.set_yscale('log')
-        ax.set_xscale('log')
+        # ax.set_xscale('log')
+
+        # ax.plot([0.1, 256], [0.1, 256], linestyle = '--', color = 'black', linewidth = 1)
 
         fig = ax.figure
 
@@ -142,11 +205,11 @@ for instance in modules_era:
         pickle.dump( ax, open( '%s/%s.p'%(ol, histName), "wb" ))
 
         ##-- Save output plots         
-        fig.savefig('%s/%s.png'%(ol, histName))
-        fig.savefig('%s/%s.pdf'%(ol, histName))
+        fig.savefig('%s/%s__.png'%(ol, histName))
+        fig.savefig('%s/%s__.pdf'%(ol, histName))
 
-        print("Saved plot %s/%s.png"%(ol, histName))
-        print("Saved plot %s/%s.pdf"%(ol, histName))
+        print("Saved plot %s/%s__.png"%(ol, histName))
+        print("Saved plot %s/%s__.pdf"%(ol, histName))
 
         ##-- To open 
         # X_train_EB_reshape_loaded = pickle.load( open( "X_train_EB_reshape_pt%s.p"%(sample), "rb" ) )
@@ -158,13 +221,14 @@ for instance in modules_era:
         # f[h] = export1d(hist) ##-- for 1d histogram exporting to output root file 
         # f[h] = plot2d(hist, xaxis = 'time_QCD_sevzero_all')
         # f[h] = plot2d(hist)
-        # print(f'wrote {h} to tree_{options.jobNum}_WS.root')
+        # print(f'wrote {h} to tree_{options.jobNum}_WS.root')    
 
 # modules_gensum = []
 
 # modules_gensum.append(GenSumWeight(isMC=options.isMC, era=int(options.era), do_syst=1, syst_var='', sample=options.dataset,
 #                          haddFileName="tree_%s.root" % str(options.jobNum)))
 
+##-- 1d histograms 
 # for instance in modules_gensum:
 #     output = run_uproot_job(
 #         # {instance.sample: files},
