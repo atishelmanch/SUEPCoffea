@@ -7,6 +7,7 @@ from coffea.processor import ProcessorABC, LazyDataFrame, dict_accumulator
 from uproot3 import recreate
 import numpy as np
 import awkward as ak 
+# from numba import jit
 
 class WSProducer(ProcessorABC):
     """
@@ -17,11 +18,10 @@ class WSProducer(ProcessorABC):
     histograms = NotImplemented
     selection = NotImplemented
 
-    def __init__(self, isMC, era=2017, sample="DY", do_syst=False, syst_var='', weight_syst=False, haddFileName=None, flag=False):
+    def __init__(self, era=2017, sample="DY", do_syst=False, syst_var='', weight_syst=False, haddFileName=None, flag=False):
         self._flag = flag
         self.do_syst = do_syst
         self.era = era
-        self.isMC = isMC
         self.sample = sample
         self.syst_var, self.syst_suffix = (syst_var, f'_sys_{syst_var}') if do_syst and syst_var else ('', '')
         self.weight_syst = weight_syst
@@ -45,12 +45,13 @@ class WSProducer(ProcessorABC):
         self.outfile = haddFileName
 
     def __repr__(self):
-        return f'{self.__class__.__name__}(era: {self.era}, isMC: {self.isMC}, sample: {self.sample}, do_syst: {self.do_syst}, syst_var: {self.syst_var}, weight_syst: {self.weight_syst}, output: {self.outfile})'
+        return f'{self.__class__.__name__}(era: {self.era}, sample: {self.sample}, do_syst: {self.do_syst}, syst_var: {self.syst_var}, weight_syst: {self.weight_syst}, output: {self.outfile})'
 
     @property
     def accumulator(self):
         return self._accumulator
-
+    
+    # @jit(nopython=True)
     def process(self, df, *args):
         output = self.accumulator.identity()
 
@@ -68,7 +69,9 @@ class WSProducer(ProcessorABC):
         #         output[name].fill(**{
         #             # 'weight': weight[selec],
         #             name: selectedValues
-        #         })   
+        #         })
+
+        #         del selectedValues   
 
         ##-- 2d histograms 
         for h, hist in list(self.histograms.items()):
@@ -84,12 +87,18 @@ class WSProducer(ProcessorABC):
                 xVals = np.hstack(ak.to_list(df[hist['target_x']][selec])).flatten()
                 yVals = np.hstack(ak.to_list(df[hist['target_y']][selec])).flatten()
 
-
                 output[name].fill(**{
                     xax_lab : xVals,
                     yax_lab : yVals 
                 }
                 )
+
+                del xVals
+                del yVals 
+                del name 
+                del selec 
+                del xax_lab
+                del yax_lab
 
         return output
 
@@ -101,18 +110,20 @@ class WSProducer(ProcessorABC):
         return eval('&'.join('(' + cut.format(sys=('' if self.weight_syst else self.syst_suffix)) + ')' for cut in self.selection[cat] ))#if excut not in cut))
 
 class SUEP_NTuple(WSProducer):
-    # emin = 32
     emin = 0
+    # emin = 0
     histograms = {
 
+        ##-- 1d histograms 
         # 'time': {
         #     'target': 'time',
         #     'name': 'time', 
-        #     # 'region': ['sevzero_all', 'sevthree_all', 'sevfour_all', 'sevzero_MostlyZeroed', 'sevthree_MostlyZeroed', 'sevfour_MostlyZeroed'],
+        #     'region': ['sevthree_all', 'sevfour_all', 'sevthree_MostlyZeroed', 'sevfour_MostlyZeroed'],
         #     # 'region': ['sevall_all', 'sevall_MostlyZeroed', 'sevzero_all', 'sevthree_all', 'sevfour_all', 'sevzero_MostlyZeroed', 'sevthree_MostlyZeroed', 'sevfour_MostlyZeroed'],
         #     # 'region': ['sevzero_all', 'sevfour_all', 'sevzero_MostlyZeroed', 'sevfour_MostlyZeroed'],
         #     # 'axis': {'label': 'time', 'n_or_arr': 120, 'lo': -225, 'hi': 125}
-        #     'axis': {'label': 'time', 'n_or_arr': 120, 'lo': -225, 'hi': 125}
+        #     # 'axis': {'label': 'time', 'n_or_arr': 120, 'lo': -225, 'hi': 125}
+        #     'axis': {'label': 'time', 'n_or_arr': 100, 'lo': -50, 'hi': 50}
         # }, 
 
         # 'twrADC': {
@@ -143,6 +154,29 @@ class SUEP_NTuple(WSProducer):
 
         # },
 
+        ##-- 2d histograms 
+        'EnergyVsTimeOccupancy': {
+            # 'target': { 'x': 'twrADC', 'y' : 'twrEmul3ADC'},
+            'target_x' : 'time',
+            'target_y' : 'twrADC',
+            'name': 'EnergyVsTimeOccupancy', 
+            # 'region': ['sevfour_all', "sevfour_MostlyZeroed"],
+            'region': ['sevfour_all'],
+            # 'region': ['sevfour_MostlyZeroed'],
+            # 'region': ['sevthree_all', "sevthree_MostlyZeroed"],
+            # 'region': ['sevzero_all', "sevzero_MostlyZeroed"],
+            # 'region': ['sevthree_MostlyZeroed'],
+            # 'region': ['sevzero_all'],
+            # 'region': ['sevthree_all', 'sevfour_all', 'sevthree_MostlyZeroed', 'sevfour_MostlyZeroed'],
+            'axes' : {
+                # 'xaxis': {'label': 'twrEmul3ADC', 'n_or_arr': 256, 'lo': 0, 'hi': 256},
+                # 'yaxis': {'label': 'twrADC', 'n_or_arr': 256, 'lo': 0, 'hi': 256}
+                'xaxis': {'label': 'time', 'n_or_arr': 100, 'lo': -50, 'hi': 50},
+                'yaxis': {'label': 'twrADC', 'n_or_arr': 255, 'lo': 1, 'hi': 256}                
+            }
+
+        },  
+
         # 'realVsEmu': {
         #     # 'target': { 'x': 'twrADC', 'y' : 'twrEmul3ADC'},
         #     'target_x' : 'twrEmul3ADC',
@@ -158,102 +192,35 @@ class SUEP_NTuple(WSProducer):
 
         # },  
 
-        'realTPVsTime': {
-            # 'target': { 'x': 'twrADC', 'y' : 'twrEmul3ADC'},
-            'target_x' : 'time',
-            'target_y' : 'twrADC',
-            'name': 'realTPVsTime', 
-            'region': ['sevzero_all', 'sevthree_all', 'sevfour_all', 'sevzero_MostlyZeroed', 'sevthree_MostlyZeroed', 'sevfour_MostlyZeroed'],
-            'axes' : {
-                # 'xaxis': {'label': 'twrEmul3ADC', 'n_or_arr': 256, 'lo': 0, 'hi': 256},
-                # 'yaxis': {'label': 'twrADC', 'n_or_arr': 256, 'lo': 0, 'hi': 256}
-                'xaxis': {'label': 'time', 'n_or_arr': 120, 'lo': -225, 'hi': 125},
-                'yaxis': {'label': 'twrADC', 'n_or_arr': 256, 'lo': 0, 'hi': 256}                
-            }
+        # 'realTPVsTime': {
+        #     # 'target': { 'x': 'twrADC', 'y' : 'twrEmul3ADC'},
+        #     'target_x' : 'time',
+        #     'target_y' : 'twrADC',
+        #     'name': 'realTPVsTime', 
+        #     'region': ['sevzero_all', 'sevthree_all', 'sevfour_all', 'sevzero_MostlyZeroed', 'sevthree_MostlyZeroed', 'sevfour_MostlyZeroed'],
+        #     'axes' : {
+        #         # 'xaxis': {'label': 'twrEmul3ADC', 'n_or_arr': 256, 'lo': 0, 'hi': 256},
+        #         # 'yaxis': {'label': 'twrADC', 'n_or_arr': 256, 'lo': 0, 'hi': 256}
+        #         'xaxis': {'label': 'time', 'n_or_arr': 120, 'lo': -225, 'hi': 125},
+        #         'yaxis': {'label': 'twrADC', 'n_or_arr': 256, 'lo': 0, 'hi': 256}                
+        #     }
 
-        },                
-
-        # ''
-
-        # # 'twrEmul3ADC': {
-        # #     'target': 'twrEmul3ADC',
-        # #     'name': 'twrEmul3ADC', 
-        # #     'region': ['sevzero_all', 'sevthree_all', 'sevfour_all', 'sevzero_TPratio_0_to_0p1'
-        # # #                'sevzero_TPratio_0', 'sevthree_TPratio_0', 'sevfour_TPratio_0',
-        # # #                'sevzero_TPratio_0_to_0p1', 'sevthree_TPratio_0_to_0p1', 'sevfour_TPratio_0_to_0p1',
-        # # #                'sevzero_TPratio_0p1_to_0p2', 'sevthree_TPratio_0p1_to_0p2', 'sevfour_TPratio_0p1_to_0p2',
-        # # #                'sevzero_TPratio_0p2_to_0p3', 'sevthree_TPratio_0p2_to_0p3', 'sevfour_TPratio_0p2_to_0p3',
-        # # #                'sevzero_TPratio_0p3_to_0p4', 'sevthree_TPratio_0p3_to_0p4', 'sevfour_TPratio_0p3_to_0p4',
-        # # #                'sevzero_TPratio_0p4_to_0p5', 'sevthree_TPratio_0p4_to_0p5', 'sevfour_TPratio_0p4_to_0p5',
-        # # #                'sevzero_TPratio_0p5_to_0p6', 'sevthree_TPratio_0p5_to_0p6', 'sevfour_TPratio_0p5_to_0p6',
-        # # #                'sevzero_TPratio_0p6_to_0p7', 'sevthree_TPratio_0p6_to_0p7', 'sevfour_TPratio_0p6_to_0p7',
-        # # #                'sevzero_TPratio_0p7_to_0p8', 'sevthree_TPratio_0p7_to_0p8', 'sevfour_TPratio_0p7_to_0p8',
-        # # #                'sevzero_TPratio_0p8_to_0p9', 'sevthree_TPratio_0p8_to_0p9', 'sevfour_TPratio_0p8_to_0p9',
-        # # #                'sevzero_TPratio_0p9_to_1p0', 'sevthree_TPratio_0p9_to_1p0', 'sevfour_TPratio_0p9_to_1p0',
-        # # #                'sevzero_TPratio_1',          'sevthree_TPratio_1',          'sevfour_TPratio_1'
-            
-        # #     ],
-        # #     'axis': {'label': 'twrEmul3ADC', 'n_or_arr': 256, 'lo': 0, 'hi': 256}
-        # # },  
-
-        # 'twrADC': {
-        #     'target': 'twrADC',
-        #     'name': 'twrADC', 
-        #     'region': ['sevzero_all', 'sevthree_all', 'sevfour_all',
-        # #                'sevzero_TPratio_0', 'sevthree_TPratio_0', 'sevfour_TPratio_0',
-        # #                'sevzero_TPratio_0_to_0p1', 'sevthree_TPratio_0_to_0p1', 'sevfour_TPratio_0_to_0p1',
-        # #                'sevzero_TPratio_0p1_to_0p2', 'sevthree_TPratio_0p1_to_0p2', 'sevfour_TPratio_0p1_to_0p2',
-        # #                'sevzero_TPratio_0p2_to_0p3', 'sevthree_TPratio_0p2_to_0p3', 'sevfour_TPratio_0p2_to_0p3',
-        # #                'sevzero_TPratio_0p3_to_0p4', 'sevthree_TPratio_0p3_to_0p4', 'sevfour_TPratio_0p3_to_0p4',
-        # #                'sevzero_TPratio_0p4_to_0p5', 'sevthree_TPratio_0p4_to_0p5', 'sevfour_TPratio_0p4_to_0p5',
-        # #                'sevzero_TPratio_0p5_to_0p6', 'sevthree_TPratio_0p5_to_0p6', 'sevfour_TPratio_0p5_to_0p6',
-        # #                'sevzero_TPratio_0p6_to_0p7', 'sevthree_TPratio_0p6_to_0p7', 'sevfour_TPratio_0p6_to_0p7',
-        # #                'sevzero_TPratio_0p7_to_0p8', 'sevthree_TPratio_0p7_to_0p8', 'sevfour_TPratio_0p7_to_0p8',
-        # #                'sevzero_TPratio_0p8_to_0p9', 'sevthree_TPratio_0p8_to_0p9', 'sevfour_TPratio_0p8_to_0p9',
-        # #                'sevzero_TPratio_0p9_to_1p0', 'sevthree_TPratio_0p9_to_1p0', 'sevfour_TPratio_0p9_to_1p0',
-        # #                'sevzero_TPratio_1',          'sevthree_TPratio_1',          'sevfour_TPratio_1'
-            
-        #     ],
-        #     'axis': {'label': 'twrADC', 'n_or_arr': 256, 'lo': 0, 'hi': 256}
-        # }, 
-
-        # 'diagPlot': {
-        #     'target': 'twrEmul3ADC:twrADC',
-        #     'name': 'ratio', 
-        #     'region': ['sevzero_all', 'sevthree_all', 'sevfour_all',
-        # #                'sevzero_TPratio_0', 'sevthree_TPratio_0', 'sevfour_TPratio_0',
-        # #                'sevzero_TPratio_0_to_0p1', 'sevthree_TPratio_0_to_0p1', 'sevfour_TPratio_0_to_0p1',
-        # #                'sevzero_TPratio_0p1_to_0p2', 'sevthree_TPratio_0p1_to_0p2', 'sevfour_TPratio_0p1_to_0p2',
-        # #                'sevzero_TPratio_0p2_to_0p3', 'sevthree_TPratio_0p2_to_0p3', 'sevfour_TPratio_0p2_to_0p3',
-        # #                'sevzero_TPratio_0p3_to_0p4', 'sevthree_TPratio_0p3_to_0p4', 'sevfour_TPratio_0p3_to_0p4',
-        # #                'sevzero_TPratio_0p4_to_0p5', 'sevthree_TPratio_0p4_to_0p5', 'sevfour_TPratio_0p4_to_0p5',
-        # #                'sevzero_TPratio_0p5_to_0p6', 'sevthree_TPratio_0p5_to_0p6', 'sevfour_TPratio_0p5_to_0p6',
-        # #                'sevzero_TPratio_0p6_to_0p7', 'sevthree_TPratio_0p6_to_0p7', 'sevfour_TPratio_0p6_to_0p7',
-        # #                'sevzero_TPratio_0p7_to_0p8', 'sevthree_TPratio_0p7_to_0p8', 'sevfour_TPratio_0p7_to_0p8',
-        # #                'sevzero_TPratio_0p8_to_0p9', 'sevthree_TPratio_0p8_to_0p9', 'sevfour_TPratio_0p8_to_0p9',
-        # #                'sevzero_TPratio_0p9_to_1p0', 'sevthree_TPratio_0p9_to_1p0', 'sevfour_TPratio_0p9_to_1p0',
-        # #                'sevzero_TPratio_1',          'sevthree_TPratio_1',          'sevfour_TPratio_1'
-            
-        #     ],
-        #     'axis': {'label': 'twrADC', 'n_or_arr': 256, 'lo': 0, 'hi': 256}
-        # },                                         
-
-    # }   
+        # },                
 
     }
 
     selection = {
 
-        ##-- All 
-            "sevall_all" : [
-                "event.sevlv != -999",
-                "event.twrADC > %s"%(emin)
-	    ],  
-            "sevall_MostlyZeroed" : [
-                "event.sevlv != -999",
-                "event.twrADC > %s"%(emin),
-                "(event.twrEmul3ADC) < (event.twrADC * 0.1)",
-	    ],          
+        # ##-- All 
+        #     "sevall_all" : [
+        #         "event.sevlv != -999",
+        #         "event.twrADC > %s"%(emin)
+	    # ],  
+        #     "sevall_MostlyZeroed" : [
+        #         "event.sevlv != -999",
+        #         "event.twrADC > %s"%(emin),
+        #         "(event.twrEmul3ADC) < (event.twrADC * 0.1)",
+	    # ],          
 
         ##-- Sev 0
             "sevzero_all" : [
@@ -304,4 +271,3 @@ class SUEP_NTuple(WSProducer):
 
     def naming_schema(self, name, region):
         return f'{name}_{region}{self.syst_suffix}'
-        # return f'{name}_{self.sample}_{region}{self.syst_suffix}'
