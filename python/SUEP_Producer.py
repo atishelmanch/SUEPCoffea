@@ -51,7 +51,6 @@ class WSProducer(ProcessorABC):
     def accumulator(self):
         return self._accumulator
     
-    # @jit(nopython=True)
     def process(self, df, *args):
         output = self.accumulator.identity()
 
@@ -160,8 +159,12 @@ class SUEP_NTuple(WSProducer):
             'target_x' : 'time',
             'target_y' : 'twrADC',
             'name': 'EnergyVsTimeOccupancy', 
+            'region' : ['sevzero_all', 'sevzero_MostlyZeroed',
+                        'sevthree_all', 'sevthree_MostlyZeroed',
+                        'sevfour_all', 'sevfour_MostlyZeroed'
+                       ],
             # 'region': ['sevfour_all', "sevfour_MostlyZeroed"],
-            'region': ['sevfour_all'],
+            # 'region': ['sevzero_all'],
             # 'region': ['sevfour_MostlyZeroed'],
             # 'region': ['sevthree_all', "sevthree_MostlyZeroed"],
             # 'region': ['sevzero_all', "sevzero_MostlyZeroed"],

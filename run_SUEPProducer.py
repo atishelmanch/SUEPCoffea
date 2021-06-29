@@ -1,4 +1,6 @@
-##-- example command: python run_SUEPProducer.py --era=2018 --tag=FewFilesForTesting2
+##-- example command: python run_SUEPProducer.py --era=2018 --tag=210628_214348
+##-- Thank you: https://research.cs.wisc.edu/htcondor/manual/v8.5/condor_submit.html
+# https://github.com/htcondor/htcondor/blob/abbf76f596e935d5f2c2645e439cb3bee2eef9a7/src/condor_starter.V6.1/docker_proc.cpp ##-- Docker/HTCondor under the hood 
 
 import os, sys
 import argparse
@@ -13,11 +15,6 @@ import glob
 
 logging.basicConfig(level=logging.DEBUG)
 
-##-- script_TEMPLATE = """#!/bin/bash
-# script_TEMPLATE = """#!/bin/sh -e
-
-# #!/usr/bin/env bash
-
 script_TEMPLATE = """#!/bin/bash
 ##source /cvmfs/cms.cern.ch/cmsset_default.sh
 
@@ -25,15 +22,7 @@ script_TEMPLATE = """#!/bin/bash
 #source /cvmfs/unpacked.cern.ch/registry.hub.docker.com/coffeateam/coffea-dask:latest
 export SCRAM_ARCH=slc7_amd64_gcc820
 
-# echo "ls /eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights :"
-# ls /eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights
-
-export LD_LIBRARY_PATH_STORED=$LD_LIBRARY_PATH_STORED
-
-echo "ls /eos :"
-ls /eos
-echo "checked /eos"
-
+# export LD_LIBRARY_PATH_STORED=$LD_LIBRARY_PATH_STORED
 
 # cd {cmssw_base}/src/SUEPCoffea/
 #cd {cmssw_base}/src/
@@ -52,38 +41,36 @@ echo "+ PYTHON_PATH = $PYTHON_PATH"
 echo "+ PWD         = $PWD"
 
 python condor_SUEP_WS.py --jobNum=$1 --era={era} --infile=$2 --treename="ETTAnalyzerTree"
-mv yields.p 
-mv values.p 
 
-#cp $2 temp_$1.root
 #python condor_SUEP_WS.py --jobNum=$1 --isMC=(((ismc))) --era={era} --infile=temp_$1.root
 
 #rm temp_$1.root
-echo "----- transfer output to eos :"
-mv tree_$1. {outputdir}
+#echo "----- transfer output to eos :"
+#mv tree_$1. {outputdir}
 echo "----- directory after running :"
 ls -lR .
 echo " ------ THE END (everyone dies !) ----- "
 """
 
 condor_TEMPLATE = """
-request_disk          = 1024
+#request_disk          = 1024
+request_disk          = 2048
+request_memory = 8000
 executable            = {jobdir}/script.sh
 arguments             = $(ProcId) $(jobid) 
-# transfer_input_files  = {transfer_files}
-#transfer_input_files  = {transfer_files}, $Fp(/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/ZeroBias_2018_EBOnly/ETTAnalyzer_CMSSW_11_3_0_StripZeroing_EBOnly/210626_062710/FewFilesForTesting/ActualFiles/)
 transfer_input_files = {transfer_files}, $(jobid)
 
-#environment = "LD_LIBRARY_PATH_STORED=/usr/bin:/usr/local/bin:/usr/foo"
-environment = "LD_LIBRARY_PATH_STORED=/eos" 
+# environment = "LD_LIBRARY_PATH_STORED=/eos" 
 
 output                = $(ClusterId).$(ProcId).out
 error                 = $(ClusterId).$(ProcId).err
 log                   = $(ClusterId).$(ProcId).log
 initialdir            = {jobdir}
 #environment           = 'vanilla'
-# transfer_output_files = yields.p,values.p 
-transfer_output_remaps = "yields.p={output_dir}/yields_$(ProcId).p;values.p={output_dir}/values_$(ProcId).p"
+# EnergyVsTimeOccupancy_sev%s_%s_yields.p
+# EnergyVsTimeOccupancy_sev%s_%s_values.p
+transfer_output_remaps = "EnergyVsTimeOccupancy_sevzero_all_yields.p={output_dir}/EnergyVsTimeOccupancy_sevzero_all_yields_$(ProcId).p;EnergyVsTimeOccupancy_sevzero_all_values.p={output_dir}/EnergyVsTimeOccupancy_sevzero_all_values_$(ProcId).p;EnergyVsTimeOccupancy_sevzero_MostlyZeroed_yields.p={output_dir}/EnergyVsTimeOccupancy_sevzero_MostlyZeroed_yields_$(ProcId).p;EnergyVsTimeOccupancy_sevzero_MostlyZeroed_values.p={output_dir}/EnergyVsTimeOccupancy_sevzero_MostlyZeroed_values_$(ProcId).p;EnergyVsTimeOccupancy_sevthree_all_yields.p={output_dir}/EnergyVsTimeOccupancy_sevthree_all_yields_$(ProcId).p;EnergyVsTimeOccupancy_sevthree_all_values.p={output_dir}/EnergyVsTimeOccupancy_sevthree_all_values_$(ProcId).p;EnergyVsTimeOccupancy_sevthree_MostlyZeroed_yields.p={output_dir}/EnergyVsTimeOccupancy_sevthree_MostlyZeroed_yields_$(ProcId).p;EnergyVsTimeOccupancy_sevthree_MostlyZeroed_values.p={output_dir}/EnergyVsTimeOccupancy_sevthree_MostlyZeroed_values_$(ProcId).p;EnergyVsTimeOccupancy_sevfour_all_yields.p={output_dir}/EnergyVsTimeOccupancy_sevfour_all_yields_$(ProcId).p;EnergyVsTimeOccupancy_sevfour_all_values.p={output_dir}/EnergyVsTimeOccupancy_sevfour_all_values_$(ProcId).p;EnergyVsTimeOccupancy_sevfour_MostlyZeroed_yields.p={output_dir}/EnergyVsTimeOccupancy_sevfour_MostlyZeroed_yields_$(ProcId).p;EnergyVsTimeOccupancy_sevfour_MostlyZeroed_values.p={output_dir}/EnergyVsTimeOccupancy_sevfour_MostlyZeroed_values_$(ProcId).p"                                                    
+#transfer_output_remaps = "yields.p={output_dir}/yields_$(ProcId).p;values.p={output_dir}/values_$(ProcId).p"
 #Requirements = HasSingularity
 +JobFlavour           = "{queue}"
 #+SingularityImage = "/cvmfs/unpacked.cern.ch/registry.hub.docker.com/coffeateam/coffea-dask:latest"
@@ -111,7 +98,9 @@ def main():
     # indir = "/mnt/hadoop/scratch/freerc/SUEP/{}/".format(options.tag)
     ##-- After it's working, replace final direc with: 0000, 0001, 0002, 0003 
     # indir = "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/ZeroBias_2018_EBOnly/ETTAnalyzer_CMSSW_11_3_0_StripZeroing_EBOnly/210626_062710/{}/".format(options.tag)
-    indir = "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/ZeroBias_2018_EBOnly/ETTAnalyzer_CMSSW_11_3_0_StripZeroing_EBOnly/210626_062710/{}/".format(options.tag)
+    # indir = "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/ZeroBias_2018_EBOnly/ETTAnalyzer_CMSSW_11_3_0_StripZeroing_EBOnly/210626_062710/{}/".format(options.tag)
+    indir = "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/ZeroBias_2018_EBOnly_100FilesPerJob/ETTAnalyzer_CMSSW_11_3_0_StripZeroing_EBOnly_100FilesPerJob/{}/".format(options.tag)
+    # indir = "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/ZeroBias_2018_EBOnly/ETTAnalyzer_CMSSW_11_3_0_StripZeroing_EBOnly/{}/".format(options.tag)
 
     pattern = "WZ"
     for sample in os.listdir(indir):

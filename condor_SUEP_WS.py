@@ -3,13 +3,6 @@ import re
 import pickle 
 from coffea.processor import run_uproot_job, futures_executor
 
-##-- Locally 
-# from python.SUEP_Producer import *
-# from python.SumWeights import *
-
-##-- Condor
-from SUEP_Producer import * 
-from SumWeights import *
 import uproot3 as uproot
 import argparse
 from matplotlib.colors import LogNorm
@@ -19,13 +12,13 @@ import time
 # singularity shell -B ${PWD} -B /afs -B /eos /cvmfs/unpacked.cern.ch/registry.hub.docker.com/coffeateam/coffea-dask:latest
 
 ##-- Single file 
-# python3 condor_SUEP_WS.py --isMC=0 --era=2018 --inDir="/eos/user/a/atishelm/ntuples/EcalL1Optimization/ETTAnalyzer/ZeroBias/ETTAnalyzer_CMSSW_11_3_0/210622_190129/SingleFile/" --treename="ETTAnalyzerTree" --outDir="/eos/user/a/atishelm/www/EcalL1Optimization/ZeroBias_singleFile/"
+# python3 condor_SUEP_WS.py --era=2018 --inDir="/eos/user/a/atishelm/ntuples/EcalL1Optimization/ETTAnalyzer/ZeroBias/ETTAnalyzer_CMSSW_11_3_0/210622_190129/SingleFile/" --treename="ETTAnalyzerTree" --outDir="/eos/user/a/atishelm/www/EcalL1Optimization/ZeroBias_singleFile/"
 
 ##-- All blocks 
-# python3 condor_SUEP_WS.py --isMC=0 --era=2018 --inDir="/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/ZeroBias_2018_EBOnly/ETTAnalyzer_CMSSW_11_3_0_StripZeroing_EBOnly/210626_062710/" --treename="ETTAnalyzerTree" --outDir="/eos/user/a/atishelm/www/EcalL1Optimization/ZeroBias_allBlocks/"
-# python3 condor_SUEP_WS.py --isMC=0 --era=2018 --inDir="/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/ZeroBias_2018/ETTAnalyzer_CMSSW_11_3_0_StripZeroing/210625_062523/" --treename="ETTAnalyzerTree" --outDir="/eos/user/a/atishelm/www/EcalL1Optimization/ZeroBias_allBlocks/"
-# python3 condor_SUEP_WS.py --isMC=0 --era=2018 --inDir="/eos/user/a/atishelm/ntuples/EcalL1Optimization/ETTAnalyzer/ZeroBias/ETTAnalyzer_CMSSW_11_3_0/210622_190129/0000/" --treename="ETTAnalyzerTree"
-# python3 condor_SUEP_WS.py --isMC=0 --era=2018 --inDir="/eos/user/a/atishelm/ntuples/EcalL1Optimization/ETTAnalyzer/ZeroBias/ETTAnalyzer_CMSSW_11_3_0/210622_190129/SingleFile/" --treename="ETTAnalyzerTree"
+# python3 condor_SUEP_WS.py --era=2018 --inDir="/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/ZeroBias_2018_EBOnly/ETTAnalyzer_CMSSW_11_3_0_StripZeroing_EBOnly/210626_062710/" --treename="ETTAnalyzerTree" --outDir="/eos/user/a/atishelm/www/EcalL1Optimization/ZeroBias_allBlocks/"
+# python3 condor_SUEP_WS.py --era=2018 --inDir="/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/ZeroBias_2018/ETTAnalyzer_CMSSW_11_3_0_StripZeroing/210625_062523/" --treename="ETTAnalyzerTree" --outDir="/eos/user/a/atishelm/www/EcalL1Optimization/ZeroBias_allBlocks/"
+# python3 condor_SUEP_WS.py --era=2018 --inDir="/eos/user/a/atishelm/ntuples/EcalL1Optimization/ETTAnalyzer/ZeroBias/ETTAnalyzer_CMSSW_11_3_0/210622_190129/0000/" --treename="ETTAnalyzerTree"
+# python3 condor_SUEP_WS.py --era=2018 --inDir="/eos/user/a/atishelm/ntuples/EcalL1Optimization/ETTAnalyzer/ZeroBias/ETTAnalyzer_CMSSW_11_3_0/210622_190129/SingleFile/" --treename="ETTAnalyzerTree"
 
 parser = argparse.ArgumentParser("")
 # parser.add_argument('--isMC', type=int, default=1, help="")
@@ -38,8 +31,19 @@ parser.add_argument('--nevt', type=str, default=-1, help="")
 parser.add_argument('--treename', type=str, default="Events", help="")
 parser.add_argument('--inDir', type=str, default="", help="") ##-- Comma separated list of directories
 parser.add_argument('--outDir', type=str, default="./", help="") ##-- Comma separated list of directories
+parser.add_argument('--condor', type=int, default=1, help="") 
 
 options = parser.parse_args()
+
+if(options.condor):
+    ##-- Condor
+    from SUEP_Producer import * 
+    from SumWeights import *
+
+else:
+    ##-- Locally 
+    from python.SUEP_Producer import *
+    from python.SumWeights import *
 
 # def inputfile(nanofile):
 #     tested = False
@@ -110,8 +114,10 @@ for i in modules_era:
     print("modules : ", i)
 
 if(options.infile != ""):
-    # filesToRun = [options.infile]
-    filesToRun = [options.infile.split('/')[-1]] ##-- For condor 
+    if(options.condor):
+        filesToRun = [options.infile.split('/')[-1]] ##-- For condor 
+    else:
+        filesToRun = [options.infile]
 else:
     filesToRun = []
     print("Finding files...")
@@ -144,7 +150,7 @@ for instance in modules_era:
         treename=options.treename,
         processor_instance=instance,
         executor=futures_executor,
-        executor_args={  'workers' : 5, ##-- 4510?, 3?
+        executor_args={  'workers' : 10, ##-- 4510?, 3?
                          'retries' : 2,
                     #    'savemetrics' : True,  
                       },
@@ -177,57 +183,51 @@ for instance in modules_era:
         high_energy_yield = np.sum(h_cut_high_vals)        
 
         yields = [low_energy_yield, high_energy_yield]
-        # print("yields",yields)
+        print("yields",yields)
 
         ##-- 2d histogram processing 
         values = hist.values()[()]
         xaxis = hist.axes()[0]
         histName = "%s_2d"%(h)
 
-        # ax = plot2d(
-        #     hist, 
-        #     xaxis = xaxis,
-        #     patch_opts = dict(
-        #         cmap = 'jet',
-        #         norm = LogNorm(vmin = 1)
-        #         )
-        #     )
-
         ##-- Pickle yields and values for plots 
-        # pickle.dump( yields, open( '%s/%s_yields.p'%(ol, histName), "wb" ))
-        # pickle.dump( values, open( '%s/%s_values.p'%(ol, histName), "wb" ))
 
-        pickle.dump( yields, open( 'yields.p', "wb" ))
-        pickle.dump( values, open( 'values.p', "wb" ))        
+        # sev = "Zero", "Three" or "Four"
+        # sel = "All", "MostlyZeroed"
 
+        ##-- Condor
+        if(options.condor):
+            pickle.dump( yields, open( '%s_yields.p'%(h), "wb" )) ##-- per severity, selection 
+            pickle.dump( values, open( '%s_values.p'%(h), "wb" ))  
 
+        ##-- Locally
+        else: 
+            pickle.dump( yields, open( '%s/%s_yields.p'%(ol, histName), "wb" ))
+            pickle.dump( values, open( '%s/%s_values.p'%(ol, histName), "wb" ))
 
+            ax = plot2d(
+                hist, 
+                xaxis = xaxis,
+                patch_opts = dict(
+                    cmap = 'jet',
+                    norm = LogNorm(vmin = 1)
+                    )
+                )
 
+            ax.set_ylim(1, 256)
+            ax.set_xlim(-50, 50)
 
+            # ax.plot([0.1, 256], [0.1, 256], linestyle = '--', color = 'black', linewidth = 1) ##-- for real vs emu  
+            ax.hlines([32], xmin = -50, xmax = 50, color = 'black') 
 
-        # ax = plot2d(
-        #     hist, 
-        #     xaxis = xaxis,
-        #     patch_opts = dict(
-        #         cmap = 'jet',
-        #         norm = LogNorm(vmin = 1)
-        #         )
-        #     )
+            fig = ax.figure
 
-        # ax.set_ylim(1, 256)
-        # ax.set_xlim(-50, 50)
+            ##-- Pickle the axis for post-processing changes 
+            pickle.dump( ax, open( '%s/%s.p'%(ol, histName), "wb" ))
 
-        # # ax.plot([0.1, 256], [0.1, 256], linestyle = '--', color = 'black', linewidth = 1) ##-- for real vs emu  
-        # ax.hlines([32], xmin = -50, xmax = 50, color = 'black') 
+            ##-- Save output plots         
+            fig.savefig('%s/%s.png'%(ol, histName))
+            fig.savefig('%s/%s.pdf'%(ol, histName))
 
-        # fig = ax.figure
-
-        # ##-- Pickle the axis for post-processing changes 
-        # pickle.dump( ax, open( '%s/%s.p'%(ol, histName), "wb" ))
-
-        # ##-- Save output plots         
-        # fig.savefig('%s/%s.png'%(ol, histName))
-        # fig.savefig('%s/%s.pdf'%(ol, histName))
-
-        # print("Saved plot %s/%s.png"%(ol, histName))
-        # print("Saved plot %s/%s.pdf"%(ol, histName))
+            print("Saved plot %s/%s.png"%(ol, histName))
+            print("Saved plot %s/%s.pdf"%(ol, histName))
