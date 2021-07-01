@@ -12,7 +12,7 @@ import time
 # singularity shell -B ${PWD} -B /afs -B /eos /cvmfs/unpacked.cern.ch/registry.hub.docker.com/coffeateam/coffea-dask:latest
 
 ##-- Single file 
-# python3 condor_SUEP_WS.py --era=2018 --inDir="/eos/user/a/atishelm/ntuples/EcalL1Optimization/ETTAnalyzer/ZeroBias/ETTAnalyzer_CMSSW_11_3_0/210622_190129/SingleFile/" --treename="ETTAnalyzerTree" --outDir="/eos/user/a/atishelm/www/EcalL1Optimization/ZeroBias_singleFile/"
+# python3 condor_SUEP_WS.py --era=2018 --inDir="/afs/cern.ch/work/a/atishelm/private/CMS-ECAL-Trigger-Group/CMSSW_11_3_0/src/ECALDoubleWeights/ETTAnalyzer/SingleFile/" --treename="ETTAnalyzerTree" --outDir="/eos/user/a/atishelm/www/EcalL1Optimization/ZeroBias_singleFile/" --condor="0"
 
 ##-- All blocks 
 # python3 condor_SUEP_WS.py --era=2018 --inDir="/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/ZeroBias_2018_EBOnly/ETTAnalyzer_CMSSW_11_3_0_StripZeroing_EBOnly/210626_062710/" --treename="ETTAnalyzerTree" --outDir="/eos/user/a/atishelm/www/EcalL1Optimization/ZeroBias_allBlocks/"
@@ -91,25 +91,6 @@ modules_era = []
 modules_era.append(SUEP_NTuple(era=int(options.era), do_syst=1, syst_var='', sample=options.dataset,
                          haddFileName="tree_%s.root" % str(options.jobNum)))                         
 
-# if options.isMC and options.doSyst==1:
-#    for sys in pro_syst:
-#        for var in ["Up", "Down"]:
-#            modules_era.append(SUEP_NTuple(options.isMC, str(options.era), do_syst=1,
-#                                     syst_var=sys + var, sample=options.dataset,
-#                                     haddFileName=f"tree_{options.jobNum}_{sys}{var}.root"))
-   
-#    for sys in ext_syst:
-#        for var in ["Up", "Down"]:
-#            modules_era.append(
-#                SUEP_NTuple(
-#                    options.isMC, str(options.era),
-#                    do_syst=1, syst_var=sys + var,
-#                    weight_syst=True,
-#                    sample=options.dataset,
-#                    haddFileName=f"tree_{options.jobNum}_{sys}{var}.root",
-#                )
-#            )
-
 for i in modules_era:
     print("modules : ", i)
 
@@ -130,7 +111,7 @@ else:
 
     # files = ["%s/%s"%(options.inDir,f) for f in os.listdir(options.inDir) if f.endswith(".root")]
 
-f = uproot.recreate("tree_%s_WS.root" % str(options.jobNum))
+f = uproot.recreate("ETT_histograms_%s.root" % str(options.jobNum))
 
 ##-- Create output directory 
 ol = options.outDir
@@ -157,10 +138,10 @@ for instance in modules_era:
         chunksize=250000        
     )
 
-    # ##-- 1d histograms 
-    # for h, hist in output.items():
-    #     f[h] = export1d(hist) ##-- for 1d histogram exporting to output root file 
-    #     print(f'wrote {h} to tree_{options.jobNum}_WS.root')
+    ##-- 1d histograms 
+    for h, hist in output.items():
+        f[h] = export1d(hist) ##-- for 1d histogram exporting to output root file 
+        print(f'wrote {h} to ETT_histograms_{options.jobNum}.root')
 
     ##-- 2d histograms 
 
@@ -170,64 +151,83 @@ for instance in modules_era:
     # print("savemetrics:")
     # print("output[1]:",output[1])
     
-    # for h, hist in output[0].items(): ##-- output[0] if savemetrics is on
-    for h, hist in output.items(): ##-- output[0] if savemetrics is on
-        print("Saving histogram %s..."%(h))
+    ##-- Binning for different 2d histogram types 
 
-        h_cut_low = hist.integrate("twrADC", slice(1, 32))
-        h_cut_low_vals = h_cut_low.values(sumw2=False)[()]
-        low_energy_yield = np.sum(h_cut_low_vals)
+    twod_plot_labels = ["EnergyVsTimeOccupancy", "EBOcc", "realVsEmu"]
 
-        h_cut_high = hist.integrate("twrADC", slice(32, 256))
-        h_cut_high_vals = h_cut_high.values(sumw2=False)[()]
-        high_energy_yield = np.sum(h_cut_high_vals)        
+    binDict = {
+        "EnergyVsTimeOccupancy" : [[-50, 50], [1, 256]],
+        "EBOcc" : [[0, 80], [-18, 18]],
+        "realVsEmu" : [[0, 256], [0, 256]]
+    }
 
-        yields = [low_energy_yield, high_energy_yield]
-        print("yields",yields)
+    # # for h, hist in output[0].items(): ##-- output[0] if savemetrics is on
+    # for h, hist in output.items(): ##-- output[0] if savemetrics is on
+    #     print("Saving histogram %s..."%(h))
 
-        ##-- 2d histogram processing 
-        values = hist.values()[()]
-        xaxis = hist.axes()[0]
-        histName = "%s_2d"%(h)
+    #     ##-- Get yields 
+    #     # h_cut_low = hist.integrate("twrADC", slice(1, 32))
+    #     # h_cut_low_vals = h_cut_low.values(sumw2=False)[()]
+    #     # low_energy_yield = np.sum(h_cut_low_vals)
 
-        ##-- Pickle yields and values for plots 
+    #     # h_cut_high = hist.integrate("twrADC", slice(32, 256))
+    #     # h_cut_high_vals = h_cut_high.values(sumw2=False)[()]
+    #     # high_energy_yield = np.sum(h_cut_high_vals)        
 
-        # sev = "Zero", "Three" or "Four"
-        # sel = "All", "MostlyZeroed"
+    #     # yields = [low_energy_yield, high_energy_yield]
+    #     # print("yields",yields)
 
-        ##-- Condor
-        if(options.condor):
-            pickle.dump( yields, open( '%s_yields.p'%(h), "wb" )) ##-- per severity, selection 
-            pickle.dump( values, open( '%s_values.p'%(h), "wb" ))  
+    #     ##-- 2d histogram processing 
+    #     values = hist.values()[()]
+    #     xaxis = hist.axes()[0]
+    #     histName = "%s_2d"%(h)
 
-        ##-- Locally
-        else: 
-            pickle.dump( yields, open( '%s/%s_yields.p'%(ol, histName), "wb" ))
-            pickle.dump( values, open( '%s/%s_values.p'%(ol, histName), "wb" ))
+    #     ##-- Pickle yields and values for plots 
 
-            ax = plot2d(
-                hist, 
-                xaxis = xaxis,
-                patch_opts = dict(
-                    cmap = 'jet',
-                    norm = LogNorm(vmin = 1)
-                    )
-                )
+    #     ##-- Condor
+    #     if(options.condor):
+    #         # pickle.dump( yields, open( '%s_yields.p'%(h), "wb" )) ##-- per severity, selection 
+    #         pickle.dump( values, open( '%s_values.p'%(h), "wb" ))  
 
-            ax.set_ylim(1, 256)
-            ax.set_xlim(-50, 50)
+    #     ##-- Locally
+    #     else: 
+    #         # pickle.dump( yields, open( '%s/%s_yields.p'%(ol, histName), "wb" ))
+    #         pickle.dump( values, open( '%s/%s_values.p'%(ol, histName), "wb" ))
 
-            # ax.plot([0.1, 256], [0.1, 256], linestyle = '--', color = 'black', linewidth = 1) ##-- for real vs emu  
-            ax.hlines([32], xmin = -50, xmax = 50, color = 'black') 
+    #         ax = plot2d(
+    #             hist, 
+    #             xaxis = xaxis,
+    #             patch_opts = dict(
+    #                 #cmap = 'jet',
+    #                 cmap = 'Blues', ##-- For real vs. emu TP
+    #                 # vmin = 0
+    #                 # norm = LogNorm(vmin = 1)
+    #                 norm = LogNorm(vmin = 1)
+    #                 )
+    #             )
 
-            fig = ax.figure
+    #         for twod_plot_label in twod_plot_labels:
+    #             if(twod_plot_label in h):
+    #                 xLims = binDict[twod_plot_label][0]
+    #                 yLims = binDict[twod_plot_label][1]
 
-            ##-- Pickle the axis for post-processing changes 
-            pickle.dump( ax, open( '%s/%s.p'%(ol, histName), "wb" ))
+    #                 xmin, xmax = xLims[0], xLims[1]
+    #                 ymin, ymax = yLims[0], yLims[1]
 
-            ##-- Save output plots         
-            fig.savefig('%s/%s.png'%(ol, histName))
-            fig.savefig('%s/%s.pdf'%(ol, histName))
+    #         ax.set_ylim(ymin, ymax)
+    #         ax.set_xlim(xmin, xmax)
 
-            print("Saved plot %s/%s.png"%(ol, histName))
-            print("Saved plot %s/%s.pdf"%(ol, histName))
+    #         ax.plot([0, 256], [0, 256], linestyle = '-', color = 'black', linewidth = 0.01) ##-- for real vs emu  
+    #         # ax.hlines([32], xmin = xmin, xmax = xmax, color = 'black') 
+
+    #         fig = ax.figure
+
+    #         ##-- Pickle the axis for post-processing changes 
+    #         pickle.dump( ax, open( '%s/%s.p'%(ol, histName), "wb" ))
+
+    #         ##-- Save output plots         
+    #         fig.savefig('%s/%s.png'%(ol, histName))
+    #         fig.savefig('%s/%s.pdf'%(ol, histName))
+
+    #         print("Saved plot %s/%s.png"%(ol, histName))
+    #         print("Saved plot %s/%s.pdf"%(ol, histName))

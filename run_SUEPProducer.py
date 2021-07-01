@@ -24,8 +24,6 @@ export SCRAM_ARCH=slc7_amd64_gcc820
 
 # export LD_LIBRARY_PATH_STORED=$LD_LIBRARY_PATH_STORED
 
-# cd {cmssw_base}/src/SUEPCoffea/
-#cd {cmssw_base}/src/
 # eval `scramv1 runtime -sh`
 #eval `scramv1 ru -sh`
 echo
@@ -35,8 +33,8 @@ echo
 echo "... start job at" `date "+%Y-%m-%d %H:%M:%S"`
 echo "----- directory before running:"
 ls -lR .
-echo "----- CMSSW BASE, python path, pwd:"
-echo "+ CMSSW_BASE  = $CMSSW_BASE"
+#echo "----- CMSSW BASE, python path, pwd:"
+#echo "+ CMSSW_BASE  = $CMSSW_BASE"
 echo "+ PYTHON_PATH = $PYTHON_PATH"
 echo "+ PWD         = $PWD"
 
@@ -67,10 +65,12 @@ error                 = $(ClusterId).$(ProcId).err
 log                   = $(ClusterId).$(ProcId).log
 initialdir            = {jobdir}
 #environment           = 'vanilla'
-# EnergyVsTimeOccupancy_sev%s_%s_yields.p
-# EnergyVsTimeOccupancy_sev%s_%s_values.p
-transfer_output_remaps = "EnergyVsTimeOccupancy_sevzero_all_yields.p={output_dir}/EnergyVsTimeOccupancy_sevzero_all_yields_$(ProcId).p;EnergyVsTimeOccupancy_sevzero_all_values.p={output_dir}/EnergyVsTimeOccupancy_sevzero_all_values_$(ProcId).p;EnergyVsTimeOccupancy_sevzero_MostlyZeroed_yields.p={output_dir}/EnergyVsTimeOccupancy_sevzero_MostlyZeroed_yields_$(ProcId).p;EnergyVsTimeOccupancy_sevzero_MostlyZeroed_values.p={output_dir}/EnergyVsTimeOccupancy_sevzero_MostlyZeroed_values_$(ProcId).p;EnergyVsTimeOccupancy_sevthree_all_yields.p={output_dir}/EnergyVsTimeOccupancy_sevthree_all_yields_$(ProcId).p;EnergyVsTimeOccupancy_sevthree_all_values.p={output_dir}/EnergyVsTimeOccupancy_sevthree_all_values_$(ProcId).p;EnergyVsTimeOccupancy_sevthree_MostlyZeroed_yields.p={output_dir}/EnergyVsTimeOccupancy_sevthree_MostlyZeroed_yields_$(ProcId).p;EnergyVsTimeOccupancy_sevthree_MostlyZeroed_values.p={output_dir}/EnergyVsTimeOccupancy_sevthree_MostlyZeroed_values_$(ProcId).p;EnergyVsTimeOccupancy_sevfour_all_yields.p={output_dir}/EnergyVsTimeOccupancy_sevfour_all_yields_$(ProcId).p;EnergyVsTimeOccupancy_sevfour_all_values.p={output_dir}/EnergyVsTimeOccupancy_sevfour_all_values_$(ProcId).p;EnergyVsTimeOccupancy_sevfour_MostlyZeroed_yields.p={output_dir}/EnergyVsTimeOccupancy_sevfour_MostlyZeroed_yields_$(ProcId).p;EnergyVsTimeOccupancy_sevfour_MostlyZeroed_values.p={output_dir}/EnergyVsTimeOccupancy_sevfour_MostlyZeroed_values_$(ProcId).p"                                                    
-#transfer_output_remaps = "yields.p={output_dir}/yields_$(ProcId).p;values.p={output_dir}/values_$(ProcId).p"
+#transfer_output_remaps = "EBOcc_sevzero_all_values.p={output_dir}/EBOcc_sevzero_all_values_$(ProcId).p;EBOcc_sevzero_MostlyZeroed_values.p={output_dir}/EBOcc_sevzero_MostlyZeroed_values_$(ProcId).p;EBOcc_sevthree_all_values.p={output_dir}/EBOcc_sevthree_all_values_$(ProcId).p;EBOcc_sevthree_MostlyZeroed_values.p={output_dir}/EBOcc_sevthree_MostlyZeroed_values_$(ProcId).p;EBOcc_sevfour_all_values.p={output_dir}/EBOcc_sevfour_all_values_$(ProcId).p;EBOcc_sevfour_MostlyZeroed_values.p={output_dir}/EBOcc_sevfour_MostlyZeroed_values_$(ProcId).p"                                                    
+#transfer_output_remaps = "EnergyVsTimeOccupancy_sevzero_all_yields.p={output_dir}/EnergyVsTimeOccupancy_sevzero_all_yields_$(ProcId).p;EnergyVsTimeOccupancy_sevzero_all_values.p={output_dir}/EnergyVsTimeOccupancy_sevzero_all_values_$(ProcId).p;EnergyVsTimeOccupancy_sevzero_MostlyZeroed_yields.p={output_dir}/EnergyVsTimeOccupancy_sevzero_MostlyZeroed_yields_$(ProcId).p;EnergyVsTimeOccupancy_sevzero_MostlyZeroed_values.p={output_dir}/EnergyVsTimeOccupancy_sevzero_MostlyZeroed_values_$(ProcId).p;EnergyVsTimeOccupancy_sevthree_all_yields.p={output_dir}/EnergyVsTimeOccupancy_sevthree_all_yields_$(ProcId).p;EnergyVsTimeOccupancy_sevthree_all_values.p={output_dir}/EnergyVsTimeOccupancy_sevthree_all_values_$(ProcId).p;EnergyVsTimeOccupancy_sevthree_MostlyZeroed_yields.p={output_dir}/EnergyVsTimeOccupancy_sevthree_MostlyZeroed_yields_$(ProcId).p;EnergyVsTimeOccupancy_sevthree_MostlyZeroed_values.p={output_dir}/EnergyVsTimeOccupancy_sevthree_MostlyZeroed_values_$(ProcId).p;EnergyVsTimeOccupancy_sevfour_all_yields.p={output_dir}/EnergyVsTimeOccupancy_sevfour_all_yields_$(ProcId).p;EnergyVsTimeOccupancy_sevfour_all_values.p={output_dir}/EnergyVsTimeOccupancy_sevfour_all_values_$(ProcId).p;EnergyVsTimeOccupancy_sevfour_MostlyZeroed_yields.p={output_dir}/EnergyVsTimeOccupancy_sevfour_MostlyZeroed_yields_$(ProcId).p;EnergyVsTimeOccupancy_sevfour_MostlyZeroed_values.p={output_dir}/EnergyVsTimeOccupancy_sevfour_MostlyZeroed_values_$(ProcId).p"
+#transfer_output_remaps = "EBOcc_all_values.p={output_dir}/EBOcc_all_values_$(ProcId).p"
+#transfer_output_remaps = "realVsEmu_sevall_all_values.p={output_dir}/realVsEmu_sevall_all_values_$(ProcId).p;realVsEmu_sevzero_all_values.p={output_dir}/realVsEmu_sevzero_all_values_$(ProcId).p;realVsEmu_sevthree_all_values.p={output_dir}/realVsEmu_sevthree_all_values_$(ProcId).p;realVsEmu_sevfour_all_values.p={output_dir}/realVsEmu_sevfour_all_values_$(ProcId).p"
+transfer_output_remaps = "ETT_histograms_$(ProcId).root={output_dir}/ETT_histograms_$(ProcId).root"
+
 #Requirements = HasSingularity
 +JobFlavour           = "{queue}"
 #+SingularityImage = "/cvmfs/unpacked.cern.ch/registry.hub.docker.com/coffeateam/coffea-dask:latest"
@@ -94,7 +94,7 @@ def main():
 
     options = parser.parse_args()
 
-    cmssw_base = os.environ['CMSSW_BASE']
+    #cmssw_base = os.environ['CMSSW_BASE']
     # indir = "/mnt/hadoop/scratch/freerc/SUEP/{}/".format(options.tag)
     ##-- After it's working, replace final direc with: 0000, 0001, 0002, 0003 
     # indir = "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/ZeroBias_2018_EBOnly/ETTAnalyzer_CMSSW_11_3_0_StripZeroing_EBOnly/210626_062710/{}/".format(options.tag)
@@ -108,6 +108,8 @@ def main():
             continue
         if "WS" in sample:
             continue
+        if "output" in sample:
+            continue 
         #if pattern not in sample:
         #    continue
 
@@ -136,7 +138,7 @@ def main():
 
         with open(os.path.join(jobs_dir, "script.sh"), "w") as scriptfile:
             script = script_TEMPLATE.format(
-                cmssw_base=cmssw_base,
+                #cmssw_base=cmssw_base,
                 # ismc=options.isMC,
                 era=options.era,
                 outputdir=outdir,
@@ -187,3 +189,6 @@ def main():
 if __name__ == "__main__":
     main()
     print("DONE")
+
+
+##-- 26 is missing
