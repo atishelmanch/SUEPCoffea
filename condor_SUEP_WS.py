@@ -153,81 +153,37 @@ for instance in modules_era:
     
     ##-- Binning for different 2d histogram types 
 
-    twod_plot_labels = ["EnergyVsTimeOccupancy", "EBOcc", "realVsEmu"]
+        # h_cut_high = hist.integrate("twrADC", slice(32, 256))
+        # h_cut_high_vals = h_cut_high.values(sumw2=False)[()]
+        # high_energy_yield = np.sum(h_cut_high_vals)        
 
-    binDict = {
-        "EnergyVsTimeOccupancy" : [[-50, 50], [1, 256]],
-        "EBOcc" : [[0, 80], [-18, 18]],
-        "realVsEmu" : [[0, 256], [0, 256]]
-    }
+        # yields = [low_energy_yield, high_energy_yield]
+        # print("yields",yields)
 
-    # # for h, hist in output[0].items(): ##-- output[0] if savemetrics is on
-    # for h, hist in output.items(): ##-- output[0] if savemetrics is on
-    #     print("Saving histogram %s..."%(h))
+        ##-- for emu / real plot, get average of each x slice 
+        # if("emuOverRealvstwrADC" in h):
+        #     totals = []
+        #     sliceValues = []
+        #     # averages = []
+        #     emuOverReal_bins = range(0, 1200, 25)
+        #     emuOverReal_bins = [val/1000. for val in emuOverReal_bins]
+            
+        #     for twrADC_energy in range(1, 256):
+        #         h_slice = hist.integrate("twrADC", slice(twrADC_energy, twrADC_energy + 1))
+        #         h_slice_vals = h_slice.values(sumw2=False)[()]
+        #         # h_slice_sum = np.sum(h_slice_vals)
+        #         print("twrADC:",twrADC_energy)
+        #         print("h_slice_vals:",h_slice_vals)
+        #         sliceValues.append(h_slice_vals)
+                # print("---> integral:",h_slice_sum)
+                # average_conts = np.multiply(emuOverReal_bins, h_slice_vals)
+                # if(np.sum(h_slice_vals) == 0):
+                #     average = -1 
+                # else:
+                #     average = np.average(emuOverReal_bins, weights=h_slice_vals)
+                # totals.append(h_slice_sum)
+                # averages.append(average)
+            # print("totals:",totals)
+            # print("averages:",averages)
+            # print("emuOverReal_bins:",emuOverReal_bins)
 
-    #     ##-- Get yields 
-    #     # h_cut_low = hist.integrate("twrADC", slice(1, 32))
-    #     # h_cut_low_vals = h_cut_low.values(sumw2=False)[()]
-    #     # low_energy_yield = np.sum(h_cut_low_vals)
-
-    #     # h_cut_high = hist.integrate("twrADC", slice(32, 256))
-    #     # h_cut_high_vals = h_cut_high.values(sumw2=False)[()]
-    #     # high_energy_yield = np.sum(h_cut_high_vals)        
-
-    #     # yields = [low_energy_yield, high_energy_yield]
-    #     # print("yields",yields)
-
-    #     ##-- 2d histogram processing 
-    #     values = hist.values()[()]
-    #     xaxis = hist.axes()[0]
-    #     histName = "%s_2d"%(h)
-
-    #     ##-- Pickle yields and values for plots 
-
-    #     ##-- Condor
-    #     if(options.condor):
-    #         # pickle.dump( yields, open( '%s_yields.p'%(h), "wb" )) ##-- per severity, selection 
-    #         pickle.dump( values, open( '%s_values.p'%(h), "wb" ))  
-
-    #     ##-- Locally
-    #     else: 
-    #         # pickle.dump( yields, open( '%s/%s_yields.p'%(ol, histName), "wb" ))
-    #         pickle.dump( values, open( '%s/%s_values.p'%(ol, histName), "wb" ))
-
-    #         ax = plot2d(
-    #             hist, 
-    #             xaxis = xaxis,
-    #             patch_opts = dict(
-    #                 #cmap = 'jet',
-    #                 cmap = 'Blues', ##-- For real vs. emu TP
-    #                 # vmin = 0
-    #                 # norm = LogNorm(vmin = 1)
-    #                 norm = LogNorm(vmin = 1)
-    #                 )
-    #             )
-
-    #         for twod_plot_label in twod_plot_labels:
-    #             if(twod_plot_label in h):
-    #                 xLims = binDict[twod_plot_label][0]
-    #                 yLims = binDict[twod_plot_label][1]
-
-    #                 xmin, xmax = xLims[0], xLims[1]
-    #                 ymin, ymax = yLims[0], yLims[1]
-
-    #         ax.set_ylim(ymin, ymax)
-    #         ax.set_xlim(xmin, xmax)
-
-    #         ax.plot([0, 256], [0, 256], linestyle = '-', color = 'black', linewidth = 0.01) ##-- for real vs emu  
-    #         # ax.hlines([32], xmin = xmin, xmax = xmax, color = 'black') 
-
-    #         fig = ax.figure
-
-    #         ##-- Pickle the axis for post-processing changes 
-    #         pickle.dump( ax, open( '%s/%s.p'%(ol, histName), "wb" ))
-
-    #         ##-- Save output plots         
-    #         fig.savefig('%s/%s.png'%(ol, histName))
-    #         fig.savefig('%s/%s.pdf'%(ol, histName))
-
-    #         print("Saved plot %s/%s.png"%(ol, histName))
-    #         print("Saved plot %s/%s.pdf"%(ol, histName))
