@@ -1,4 +1,5 @@
 ##-- example command: python run_SUEPProducer.py --era=2018 --tag=210628_214348
+##-- example command: python run_SUEPProducer.py --era=2018 --tag=210809_140837
 ##-- Thank you: https://research.cs.wisc.edu/htcondor/manual/v8.5/condor_submit.html
 # https://github.com/htcondor/htcondor/blob/abbf76f596e935d5f2c2645e439cb3bee2eef9a7/src/condor_starter.V6.1/docker_proc.cpp ##-- Docker/HTCondor under the hood 
 
@@ -69,7 +70,13 @@ initialdir            = {jobdir}
 #transfer_output_remaps = "EnergyVsTimeOccupancy_sevzero_all_yields.p={output_dir}/EnergyVsTimeOccupancy_sevzero_all_yields_$(ProcId).p;EnergyVsTimeOccupancy_sevzero_all_values.p={output_dir}/EnergyVsTimeOccupancy_sevzero_all_values_$(ProcId).p;EnergyVsTimeOccupancy_sevzero_MostlyZeroed_yields.p={output_dir}/EnergyVsTimeOccupancy_sevzero_MostlyZeroed_yields_$(ProcId).p;EnergyVsTimeOccupancy_sevzero_MostlyZeroed_values.p={output_dir}/EnergyVsTimeOccupancy_sevzero_MostlyZeroed_values_$(ProcId).p;EnergyVsTimeOccupancy_sevthree_all_yields.p={output_dir}/EnergyVsTimeOccupancy_sevthree_all_yields_$(ProcId).p;EnergyVsTimeOccupancy_sevthree_all_values.p={output_dir}/EnergyVsTimeOccupancy_sevthree_all_values_$(ProcId).p;EnergyVsTimeOccupancy_sevthree_MostlyZeroed_yields.p={output_dir}/EnergyVsTimeOccupancy_sevthree_MostlyZeroed_yields_$(ProcId).p;EnergyVsTimeOccupancy_sevthree_MostlyZeroed_values.p={output_dir}/EnergyVsTimeOccupancy_sevthree_MostlyZeroed_values_$(ProcId).p;EnergyVsTimeOccupancy_sevfour_all_yields.p={output_dir}/EnergyVsTimeOccupancy_sevfour_all_yields_$(ProcId).p;EnergyVsTimeOccupancy_sevfour_all_values.p={output_dir}/EnergyVsTimeOccupancy_sevfour_all_values_$(ProcId).p;EnergyVsTimeOccupancy_sevfour_MostlyZeroed_yields.p={output_dir}/EnergyVsTimeOccupancy_sevfour_MostlyZeroed_yields_$(ProcId).p;EnergyVsTimeOccupancy_sevfour_MostlyZeroed_values.p={output_dir}/EnergyVsTimeOccupancy_sevfour_MostlyZeroed_values_$(ProcId).p"
 #transfer_output_remaps = "EBOcc_all_values.p={output_dir}/EBOcc_all_values_$(ProcId).p"
 #transfer_output_remaps = "realVsEmu_sevall_all_values.p={output_dir}/realVsEmu_sevall_all_values_$(ProcId).p;realVsEmu_sevzero_all_values.p={output_dir}/realVsEmu_sevzero_all_values_$(ProcId).p;realVsEmu_sevthree_all_values.p={output_dir}/realVsEmu_sevthree_all_values_$(ProcId).p;realVsEmu_sevfour_all_values.p={output_dir}/realVsEmu_sevfour_all_values_$(ProcId).p"
-transfer_output_remaps = "ETT_histograms_$(ProcId).root={output_dir}/ETT_histograms_$(ProcId).root"
+#transfer_output_remaps = "ETT_histograms_$(ProcId).root={output_dir}/ETT_histograms_$(ProcId).root"
+#transfer_output_remaps = "emuOverRealvstwrADC_sevzero_all_values.p={output_dir}/emuOverRealvstwrADC_sevzero_all_values_$(ProcId).p;emuOverRealvstwrADC_sevthree_all_values.p={output_dir}/emuOverRealvstwrADC_sevthree_all_values_$(ProcId).p;emuOverRealvstwrADC_sevfour_all_values.p={output_dir}/emuOverRealvstwrADC_sevfour_all_values_$(ProcId).p;emuOverRealvstwrADC_sevzero_all_sliceValues.p={output_dir}/emuOverRealvstwrADC_sevzero_all_sliceValues_$(ProcId).p;emuOverRealvstwrADC_sevthree_all_sliceValues.p={output_dir}/emuOverRealvstwrADC_sevthree_all_sliceValues_$(ProcId).p;emuOverRealvstwrADC_sevfour_all_sliceValues.p={output_dir}/emuOverRealvstwrADC_sevfour_all_sliceValues_$(ProcId).p"
+#transfer_output_remaps = "emuOverRealvstwrADC_sevzero_all_values.p={output_dir}/emuOverRealvstwrADC_sevzero_all_values_$(ProcId).p;emuOverRealvstwrADC_sevthree_all_values.p={output_dir}/emuOverRealvstwrADC_sevthree_all_values_$(ProcId).p;emuOverRealvstwrADC_sevfour_all_values.p={output_dir}/emuOverRealvstwrADC_sevfour_all_values_$(ProcId).p"
+#transfer_output_remaps = "oneMinusEmuOverRealvstwrADC_sevzero_all_values.p={output_dir}/oneMinusEmuOverRealvstwrADC_sevzero_all_values_$(ProcId).p;oneMinusEmuOverRealvstwrADC_sevthree_all_values.p={output_dir}/oneMinusEmuOverRealvstwrADC_sevthree_all_values_$(ProcId).p;oneMinusEmuOverRealvstwrADC_sevfour_all_values.p={output_dir}/oneMinusEmuOverRealvstwrADC_sevfour_all_values_$(ProcId).p"
+
+#transfer_output_remaps = "oneMinusEmuOverRealvstwrADC_sevzero_inTime_values.p={output_dir}/oneMinusEmuOverRealvstwrADC_sevzero_inTime_values_$(ProcId).p;oneMinusEmuOverRealvstwrADC_sevthree_inTime_values.p={output_dir}/oneMinusEmuOverRealvstwrADC_sevthree_inTime_values_$(ProcId).p;oneMinusEmuOverRealvstwrADC_sevfour_inTime_values.p={output_dir}/oneMinusEmuOverRealvstwrADC_sevfour_inTime_values_$(ProcId).p;oneMinusEmuOverRealvstwrADC_sevzero_Early_values.p={output_dir}/oneMinusEmuOverRealvstwrADC_sevzero_Early_values_$(ProcId).p;oneMinusEmuOverRealvstwrADC_sevthree_Early_values.p={output_dir}/oneMinusEmuOverRealvstwrADC_sevthree_Early_values_$(ProcId).p;oneMinusEmuOverRealvstwrADC_sevfour_Early_values.p={output_dir}/oneMinusEmuOverRealvstwrADC_sevfour_Early_values_$(ProcId).p;oneMinusEmuOverRealvstwrADC_sevzero_Late_values.p={output_dir}/oneMinusEmuOverRealvstwrADC_sevzero_Late_values_$(ProcId).p;oneMinusEmuOverRealvstwrADC_sevthree_Late_values.p={output_dir}/oneMinusEmuOverRealvstwrADC_sevthree_Late_values_$(ProcId).p;oneMinusEmuOverRealvstwrADC_sevfour_Late_values.p={output_dir}/oneMinusEmuOverRealvstwrADC_sevfour_Late_values_$(ProcId).p;oneMinusEmuOverRealvstwrADC_sevzero_VeryLate_values.p={output_dir}/oneMinusEmuOverRealvstwrADC_sevzero_VeryLate_values_$(ProcId).p;oneMinusEmuOverRealvstwrADC_sevthree_VeryLate_values.p={output_dir}/oneMinusEmuOverRealvstwrADC_sevthree_VeryLate_values_$(ProcId).p;oneMinusEmuOverRealvstwrADC_sevfour_VeryLate_values.p={output_dir}/oneMinusEmuOverRealvstwrADC_sevfour_VeryLate_values_$(ProcId).p"
+transfer_output_remaps = "oneMinusEmuOverRealvstwrADCCourseBinning_sevzero_inTime_values.p={output_dir}/oneMinusEmuOverRealvstwrADCCourseBinning_sevzero_inTime_values_$(ProcId).p;oneMinusEmuOverRealvstwrADCCourseBinning_sevthree_inTime_values.p={output_dir}/oneMinusEmuOverRealvstwrADCCourseBinning_sevthree_inTime_values_$(ProcId).p;oneMinusEmuOverRealvstwrADCCourseBinning_sevfour_inTime_values.p={output_dir}/oneMinusEmuOverRealvstwrADCCourseBinning_sevfour_inTime_values_$(ProcId).p;oneMinusEmuOverRealvstwrADCCourseBinning_sevzero_Early_values.p={output_dir}/oneMinusEmuOverRealvstwrADCCourseBinning_sevzero_Early_values_$(ProcId).p;oneMinusEmuOverRealvstwrADCCourseBinning_sevthree_Early_values.p={output_dir}/oneMinusEmuOverRealvstwrADCCourseBinning_sevthree_Early_values_$(ProcId).p;oneMinusEmuOverRealvstwrADCCourseBinning_sevfour_Early_values.p={output_dir}/oneMinusEmuOverRealvstwrADCCourseBinning_sevfour_Early_values_$(ProcId).p;oneMinusEmuOverRealvstwrADCCourseBinning_sevzero_Late_values.p={output_dir}/oneMinusEmuOverRealvstwrADCCourseBinning_sevzero_Late_values_$(ProcId).p;oneMinusEmuOverRealvstwrADCCourseBinning_sevthree_Late_values.p={output_dir}/oneMinusEmuOverRealvstwrADCCourseBinning_sevthree_Late_values_$(ProcId).p;oneMinusEmuOverRealvstwrADCCourseBinning_sevfour_Late_values.p={output_dir}/oneMinusEmuOverRealvstwrADCCourseBinning_sevfour_Late_values_$(ProcId).p;oneMinusEmuOverRealvstwrADCCourseBinning_sevzero_VeryLate_values.p={output_dir}/oneMinusEmuOverRealvstwrADCCourseBinning_sevzero_VeryLate_values_$(ProcId).p;oneMinusEmuOverRealvstwrADCCourseBinning_sevthree_VeryLate_values.p={output_dir}/oneMinusEmuOverRealvstwrADCCourseBinning_sevthree_VeryLate_values_$(ProcId).p;oneMinusEmuOverRealvstwrADCCourseBinning_sevfour_VeryLate_values.p={output_dir}/oneMinusEmuOverRealvstwrADCCourseBinning_sevfour_VeryLate_values_$(ProcId).p"
 
 #Requirements = HasSingularity
 +JobFlavour           = "{queue}"
@@ -94,15 +101,9 @@ def main():
 
     options = parser.parse_args()
 
-    #cmssw_base = os.environ['CMSSW_BASE']
-    # indir = "/mnt/hadoop/scratch/freerc/SUEP/{}/".format(options.tag)
-    ##-- After it's working, replace final direc with: 0000, 0001, 0002, 0003 
-    # indir = "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/ZeroBias_2018_EBOnly/ETTAnalyzer_CMSSW_11_3_0_StripZeroing_EBOnly/210626_062710/{}/".format(options.tag)
-    # indir = "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/ZeroBias_2018_EBOnly/ETTAnalyzer_CMSSW_11_3_0_StripZeroing_EBOnly/210626_062710/{}/".format(options.tag)
-    indir = "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/ZeroBias_2018_EBOnly_100FilesPerJob/ETTAnalyzer_CMSSW_11_3_0_StripZeroing_EBOnly_100FilesPerJob/{}/".format(options.tag)
-    # indir = "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/ZeroBias_2018_EBOnly/ETTAnalyzer_CMSSW_11_3_0_StripZeroing_EBOnly/{}/".format(options.tag)
+    # indir = "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/ZeroBias_2018_EBOnly_100FilesPerJob/ETTAnalyzer_CMSSW_11_3_0_StripZeroing_EBOnly_100FilesPerJob/{}/".format(options.tag)
+    indir = "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/ZeroBias_2018_EBOnly_FixedOccProportion/ETTAnalyzer_CMSSW_11_3_0_StripZeroing_EBOnly_FixedOccProportion/{}/".format(options.tag)
 
-    pattern = "WZ"
     for sample in os.listdir(indir):
         if "merged" in sample:
             continue
@@ -110,8 +111,6 @@ def main():
             continue
         if "output" in sample:
             continue 
-        #if pattern not in sample:
-        #    continue
 
         jobs_dir = '_'.join(['jobs', options.tag, sample])
         logging.info("-- sample_name : " + sample)
@@ -138,11 +137,8 @@ def main():
 
         with open(os.path.join(jobs_dir, "script.sh"), "w") as scriptfile:
             script = script_TEMPLATE.format(
-                #cmssw_base=cmssw_base,
-                # ismc=options.isMC,
                 era=options.era,
                 outputdir=outdir,
-                # indir = "{indir}/{sample}/".format(sample=sample, indir=indir),
             )
             scriptfile.write(script)
             scriptfile.close()
@@ -153,19 +149,9 @@ def main():
                 "../python/SUEP_Producer.py",
                 "../python/SumWeights.py"
             ]
-            # in_files = glob.glob("{indir}/{sample}/*.root".format(sample=sample, indir=indir))
-            # for fi in in_files:
-                # allFiles.append(fi)
-            # print("allFiles:",allFiles)
             condor = condor_TEMPLATE.format(
                 transfer_files = ",".join(allFiles),
                 output_dir = outdir,
-                # transfer_files= ",".join([
-                    # "../condor_SUEP_WS.py",
-                    # "../python/SUEP_Producer.py",
-                    # "../python/SumWeights.py",
-                    # inputFile
-                # ]),
                 jobdir=jobs_dir,
                 queue=options.queue
             )
@@ -189,6 +175,3 @@ def main():
 if __name__ == "__main__":
     main()
     print("DONE")
-
-
-##-- 26 is missing
