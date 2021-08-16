@@ -1,4 +1,5 @@
 ##-- example command: python run_SUEPProducer.py --era=2018 --tag=210628_214348
+##-- example command: python run_SUEPProducer.py --era=2018 --tag=210809_140837
 ##-- Thank you: https://research.cs.wisc.edu/htcondor/manual/v8.5/condor_submit.html
 # https://github.com/htcondor/htcondor/blob/abbf76f596e935d5f2c2645e439cb3bee2eef9a7/src/condor_starter.V6.1/docker_proc.cpp ##-- Docker/HTCondor under the hood 
 
@@ -100,7 +101,8 @@ def main():
 
     options = parser.parse_args()
 
-    indir = "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/ZeroBias_2018_EBOnly_100FilesPerJob/ETTAnalyzer_CMSSW_11_3_0_StripZeroing_EBOnly_100FilesPerJob/{}/".format(options.tag)
+    # indir = "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/ZeroBias_2018_EBOnly_100FilesPerJob/ETTAnalyzer_CMSSW_11_3_0_StripZeroing_EBOnly_100FilesPerJob/{}/".format(options.tag)
+    indir = "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/ZeroBias_2018_EBOnly_FixedOccProportion/ETTAnalyzer_CMSSW_11_3_0_StripZeroing_EBOnly_FixedOccProportion/{}/".format(options.tag)
 
     for sample in os.listdir(indir):
         if "merged" in sample:
@@ -135,11 +137,8 @@ def main():
 
         with open(os.path.join(jobs_dir, "script.sh"), "w") as scriptfile:
             script = script_TEMPLATE.format(
-                #cmssw_base=cmssw_base,
-                # ismc=options.isMC,
                 era=options.era,
                 outputdir=outdir,
-                # indir = "{indir}/{sample}/".format(sample=sample, indir=indir),
             )
             scriptfile.write(script)
             scriptfile.close()
@@ -150,19 +149,9 @@ def main():
                 "../python/SUEP_Producer.py",
                 "../python/SumWeights.py"
             ]
-            # in_files = glob.glob("{indir}/{sample}/*.root".format(sample=sample, indir=indir))
-            # for fi in in_files:
-                # allFiles.append(fi)
-            # print("allFiles:",allFiles)
             condor = condor_TEMPLATE.format(
                 transfer_files = ",".join(allFiles),
                 output_dir = outdir,
-                # transfer_files= ",".join([
-                    # "../condor_SUEP_WS.py",
-                    # "../python/SUEP_Producer.py",
-                    # "../python/SumWeights.py",
-                    # inputFile
-                # ]),
                 jobdir=jobs_dir,
                 queue=options.queue
             )
@@ -186,6 +175,3 @@ def main():
 if __name__ == "__main__":
     main()
     print("DONE")
-
-
-##-- 26 is missing

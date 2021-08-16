@@ -8,7 +8,6 @@ from uproot3 import recreate
 import numpy as np
 import awkward as ak 
 import copy 
-# from numba import jit
 
 class WSProducer(ProcessorABC):
     """
@@ -27,21 +26,21 @@ class WSProducer(ProcessorABC):
         self.syst_var, self.syst_suffix = (syst_var, f'_sys_{syst_var}') if do_syst and syst_var else ('', '')
         self.weight_syst = weight_syst
 
-        ##-- 1d histograms
+        # ##-- 1d histograms
+        # self._accumulator = dict_accumulator({
+        #     name: Hist('Events', Bin(name=name, **axis))
+        #     for name, axis in ((self.naming_schema(hist['name'], region), hist['axis'])
+        #                        for _, hist in list(self.histograms.items())
+        #                        for region in hist['region'])
+        # })
+
+        ##-- 2d histograms 
         self._accumulator = dict_accumulator({
-            name: Hist('Events', Bin(name=name, **axis))
-            for name, axis in ((self.naming_schema(hist['name'], region), hist['axis'])
+            name: Hist('Events', Bin(name = axes['xaxis']['label'], **axes['xaxis']), Bin(name = axes['yaxis']['label'], **axes['yaxis'])) ##-- Make it 2d by specifying two Binnings 
+            for name, axes in ((self.naming_schema(hist['name'], region), hist['axes'])
                                for _, hist in list(self.histograms.items())
                                for region in hist['region'])
-        })
-
-        ###-- 2d histograms 
-        #self._accumulator = dict_accumulator({
-        #    name: Hist('Events', Bin(name = axes['xaxis']['label'], **axes['xaxis']), Bin(name = axes['yaxis']['label'], **axes['yaxis'])) ##-- Make it 2d by specifying two Binnings 
-        #    for name, axes in ((self.naming_schema(hist['name'], region), hist['axes'])
-        #                       for _, hist in list(self.histograms.items())
-        #                       for region in hist['region'])
-        #})        
+        })        
 
         self.outfile = haddFileName
 
@@ -57,22 +56,54 @@ class WSProducer(ProcessorABC):
 
         # weight = self.weighting(df)
 
-        ##-- 1d histograms 
+        # ##-- 1d histograms 
+        # for h, hist in list(self.histograms.items()):
+        #     for region in hist['region']:
+
+        #         name = self.naming_schema(hist['name'], region)
+        #         selec = self.passbut(df, hist['target'], region)
+
+        #         selectedValues = np.hstack(ak.to_list(df[hist['target']][selec])).flatten()
+
+        #         output[name].fill(**{
+        #             # 'weight': weight[selec],
+        #             name: selectedValues
+        #         })
+
+        #         del selectedValues   
+
+        ##-- 2d histograms 
         for h, hist in list(self.histograms.items()):
             for region in hist['region']:
 
                 name = self.naming_schema(hist['name'], region)
-                selec = self.passbut(df, hist['target'], region)
-                
-                #selectedValues = np.hstack(ak.to_list(df[hist['target']][selec])).flatten()
+                selec = self.passbut(df, hist['target_x'], region) ##-- Should the selection depend on target?
+                # selec = self.passbut(df, region)
+
+                xax_lab = hist['target_x']
+                # yax_lab = hist['target_y']
+                # yax_lab = "twrEmul3ADCOverTwrADC"
+                # yax_lab = "emuOverReal"
+                yax_lab = "oneMinusEmuOverRealvstwrADCCourseBinning"
+
+                xVals = np.hstack(ak.to_list(df[hist['target_x']][selec])).flatten()
+
+                # yVals = np.hstack(ak.to_list(df[hist['target_y']][selec])).flatten()
+                # yVals = np.hstack(ak.to_list((np.divide(df["twrEmul3ADC"], df["twrADC"]))[selec])).flatten() ## 'target_y' : '(twrEmul3ADC/twrADC)',
+                yVals = np.hstack(ak.to_list((np.subtract(1., np.divide(df["twrEmul3ADC"], df["twrADC"])))[selec])).flatten() ## 'target_y' : '1 - (twrEmul3ADC/twrADC)',
 
                 output[name].fill(**{
-                    # 'weight': weight[selec],
-                    #name: df[hist['target']][selec].flatten()
-                    name: df[hist['target']][selec]
-                })
+                    xax_lab : xVals,
+                    yax_lab : yVals 
+                }
+                )
 
-                #del selectedValues   
+                del xVals
+                del yVals 
+                del name 
+                del selec 
+                del xax_lab
+                del yax_lab
 
         return output
 
@@ -85,29 +116,228 @@ class WSProducer(ProcessorABC):
 
 class SUEP_NTuple(WSProducer):
 
-    #}
+    SelectionsToRun = []
+
+    severities = ["zero", "three", "four"]
+    sevDict = {
+        "zero" : "0",
+        "three" : "3",
+        "four" : "4"
+    }
+    # times = ["all", "inTime", "Early", "Late", "VeryLate"]
+    times = ["inTime", "Early", "Late", "VeryLate"]
+
+    for severity in severities:
+        for time in times:
+            if(time == "inTime" and severity == "three"): continue ##-- skip in time severity 3 
+            selname = "sev%s_%s"%(severity, time)
+            SelectionsToRun.append(selname)   
+
     histograms = {
 
-        'Zlep_cand_mass': {
-            'target': 'Zlep_cand_mass',
-            'name'  : 'Zlep_cand_mass',  # name to write to histogram
-            'region': ['signal'],
-            'axis': {'label': 'Zlep_cand_mass', 'n_or_arr': 100, 'lo': 50, 'hi': 100}
-        },
-   } 
+        ##-- 1d histograms 
+        # 'time': {
+        #     'target': 'time',
+        #     'name': 'time', 
+        #     'region' : ['sevzero_all_', 'sevzero_MostlyZeroed',
+        #                 'sevthree_all', 'sevthree_MostlyZeroed',
+        #                 'sevfour_all', 'sevfour_MostlyZeroed'
+        #                ],
 
-    selection = {
-            "signal" : [
-                "event.ngood_bjets     >  0",
-                "event.lep_category    == 2",
-                "event.leading_lep_pt  > 25",
-                "event.trailing_lep_pt > 20"
-            ],
-        }
+        #     # 'region' : [
+        #                 # 'sevzero_all_twrADC1to2', 'sevzero_MostlyZeroed_twrADC1to2',
+        #                 # 'sevzero_all_twrADC2to32', 'sevzero_MostlyZeroed_twrADC2to32',
+        #                 # 'sevzero_all_twrADC32to256', 'sevzero_MostlyZeroed_twrADC32to256',
 
+        #                 # 'sevthree_all_twrADC1to2', 'sevthree_MostlyZeroed_twrADC1to2',
+        #                 # 'sevthree_all_twrADC2to32', 'sevthree_MostlyZeroed_twrADC2to32',
+        #                 # 'sevthree_all_twrADC32to256', 'sevthree_MostlyZeroed_twrADC32to256',
+
+        #                 # 'sevfour_all_twrADC1to2', 'sevfour_MostlyZeroed_twrADC1to2',
+        #                 # 'sevfour_all_twrADC2to32', 'sevfour_MostlyZeroed_twrADC2to32',
+        #                 # 'sevfour_all_twrADC32to256', 'sevfour_MostlyZeroed_twrADC32to256',                                                
+
+        #             #    ],
+
+        #     # 'region': ['sevall_all', 'sevall_MostlyZeroed', 'sevzero_all', 'sevthree_all', 'sevfour_all', 'sevzero_MostlyZeroed', 'sevthree_MostlyZeroed', 'sevfour_MostlyZeroed'],
+        #     # 'region': ['sevzero_all', 'sevfour_all', 'sevzero_MostlyZeroed', 'sevfour_MostlyZeroed'],
+        #     # 'axis': {'label': 'time', 'n_or_arr': 120, 'lo': -225, 'hi': 125}
+        #     # 'axis': {'label': 'time', 'n_or_arr': 120, 'lo': -225, 'hi': 125}
+        #     'axis': {'label': 'time', 'n_or_arr': 100, 'lo': -50, 'hi': 50}
+        # }, 
+
+        # 'twrADC': {
+        #     'target': 'twrADC',
+        #     'name': 'twrADC', 
+        #     'region' : ['sevzero_all', 'sevzero_MostlyZeroed',
+        #                 'sevthree_all', 'sevthree_MostlyZeroed',
+        #                 'sevfour_all', 'sevfour_MostlyZeroed'
+        #                ],
+        #     'axis': {'label': 'twrADC', 'n_or_arr': 255, 'lo': 1, 'hi': 256}
+        # }, 
+
+        # 'twrEmul3ADC': {
+        #     'target': 'twrEmul3ADC',
+        #     'name': 'twrEmul3ADC', 
+        #     'region' : ['sevzero_all', 'sevzero_MostlyZeroed',
+        #                 'sevthree_all', 'sevthree_MostlyZeroed',
+        #                 'sevfour_all', 'sevfour_MostlyZeroed'
+        #                ],
+        #     'axis': {'label': 'twrEmul3ADC', 'n_or_arr': 255, 'lo': 1, 'hi': 256}
+        # },                 
+
+        # 'twrADC': {
+        #     'target': 'twrADC',
+        #     'name': 'twrADC', 
+        #     # 'region': ['sevzero_all', 'sevthree_all', 'sevfour_all', 'sevzero_MostlyZeroed', 'sevthree_MostlyZeroed', 'sevfour_MostlyZeroed'],
+        #     # 'region': ['sevall_all', 'sevall_MostlyZeroed', 'sevzero_all', 'sevthree_all', 'sevfour_all', 'sevzero_MostlyZeroed', 'sevthree_MostlyZeroed', 'sevfour_MostlyZeroed'],
+        #     'region': ['sevzero_all', 'sevthree_all', 'sevfour_all', 'sevzero_MostlyZeroed', 'sevthree_MostlyZeroed', 'sevfour_MostlyZeroed'],
+        #     'axis': {'label': 'twrADC', 'n_or_arr': 256, 'lo': 0, 'hi': 256}
+        # }, 
+
+        # 'twrEmul3ADC': {
+        #     'target': 'twrADC',
+        #     'name': 'twrADC', 
+        #     # 'region': ['sevzero_all', 'sevthree_all', 'sevfour_all', 'sevzero_MostlyZeroed', 'sevthree_MostlyZeroed', 'sevfour_MostlyZeroed'],
+        #     'region': ['sevall_all', 'sevall_MostlyZeroed', 'sevzero_all', 'sevthree_all', 'sevfour_all', 'sevzero_MostlyZeroed', 'sevthree_MostlyZeroed', 'sevfour_MostlyZeroed'],
+        #     'axis': {'label': 'twrADC', 'n_or_arr': 256, 'lo': 0, 'hi': 256}
+        # },                 
+
+        # 'time': {
+        #     'target': 'time',
+        #     'name': 'time', 
+        #     'region': ['sevzero_all', 'sevthree_all', 'sevfour_all', 'sevzero_MostlyZeroed', 'sevthree_MostlyZeroed', 'sevfour_MostlyZeroed'],
+        #     'axes' : {
+        #         'xaxis': {'label': 'time', 'n_or_arr': 120, 'lo': -225, 'hi': 125},
+        #         'yaxis': {'label': 'time', 'n_or_arr': 120, 'lo': -225, 'hi': 125}
+        #     }
+
+        # },
+
+        ##-- 2d histograms 
+
+        ##-- emu/real 
+        # 'emuOverRealvstwrADC': {
+        #     'target_x' : 'twrADC',
+        #     # 'target_y' : '(twrEmul3ADC/twrADC)',
+        #     'target_y' : 'emuOverReal',
+        #     'name': 'emuOverRealvstwrADC', 
+        #     'region' : ['sevzero_all',
+        #                 'sevthree_all',
+        #                 'sevfour_all'
+        #                ],
+        #     'axes' : {
+        #         'xaxis': {'label': 'twrADC', 'n_or_arr': 255, 'lo': 1, 'hi': 256},
+        #         'yaxis': {'label': 'emuOverReal', 'n_or_arr': 48, 'lo': 0, 'hi': 1.2}                
+        #     }
+
+        # },  
+
+        ##-- 1 - emu/real 
+        'oneMinusEmuOverRealvstwrADCCourseBinning': {
+            'target_x' : 'twrADC',
+            # 'target_y' : '(twrEmul3ADC/twrADC)',
+            'target_y' : 'oneMinusEmuOverRealvstwrADCCourseBinning',
+            'name': 'oneMinusEmuOverRealvstwrADCCourseBinning', 
+            'region' : SelectionsToRun, 
+            # 'region' : ['sevzero_all'
+            #             # 'sevthree_all', 
+            #             # 'sevfour_all'
+            #            ],
+            'axes' : {
+                # 'xaxis': {'label': 'twrADC', 'n_or_arr': 255, 'lo': 1, 'hi': 256}, ## [0.0, 8.0, 16.0, 24.0, 32.0, 40.0, 48.0, 56.0, 64.0, 72.0, 80.0, 88.0, 96.0, 104.0, 112.0, 150.0, 256.0]
+                # 'xaxis': {'label': 'twrADC', 'n_or_arr': np.ndarray([1.0, 8.0, 16.0, 24.0, 32.0, 40.0, 48.0, 56.0, 64.0, 72.0, 80.0, 88.0, 96.0, 104.0, 112.0, 150.0, 256.0]), 'lo': 1, 'hi': 256}, ## [0.0, 8.0, 16.0, 24.0, 32.0, 40.0, 48.0, 56.0, 64.0, 72.0, 80.0, 88.0, 96.0, 104.0, 112.0, 150.0, 256.0]
+                'xaxis': {'label': 'twrADC', 'n_or_arr': [1.0, 8.0, 16.0, 24.0, 32.0, 40.0, 48.0, 56.0, 64.0, 72.0, 80.0, 88.0, 96.0, 104.0, 112.0, 150.0, 256.0], 'lo': 1, 'hi': 256}, ## [0.0, 8.0, 16.0, 24.0, 32.0, 40.0, 48.0, 56.0, 64.0, 72.0, 80.0, 88.0, 96.0, 104.0, 112.0, 150.0, 256.0]
+                # 'yaxis': {'label': 'oneMinusEmuOverRealvstwrADCCourseBinning', 'n_or_arr': 48, 'lo': 0, 'hi': 1.2}                
+                # 'yaxis': {'label': 'oneMinusEmuOverRealvstwrADCCourseBinning', 'n_or_arr': 88, 'lo': -1, 'hi': 1.2}                
+                'yaxis': {'label': 'oneMinusEmuOverRealvstwrADCCourseBinning', 'n_or_arr': 128, 'lo': -2, 'hi': 1.2}                
+            }
+
+        },          
+
+        # 'EnergyVsTimeOccupancy': {
+        #     # 'target': { 'x': 'twrADC', 'y' : 'twrEmul3ADC'},
+        #     'target_x' : 'time',
+        #     'target_y' : 'twrADC',
+        #     'name': 'EnergyVsTimeOccupancy', 
+        #     'region' : ['sevzero_all', 'sevzero_MostlyZeroed',
+        #                 'sevthree_all', 'sevthree_MostlyZeroed',
+        #                 'sevfour_all', 'sevfour_MostlyZeroed'
+        #                ],
+        #     'axes' : {
+        #         'xaxis': {'label': 'time', 'n_or_arr': 100, 'lo': -50, 'hi': 50},
+        #         'yaxis': {'label': 'twrADC', 'n_or_arr': 255, 'lo': 1, 'hi': 256}                
+        #     }
+
+        # },  
+
+        # 'EBOcc': {
+        #     'target_x' : 'iphi',
+        #     'target_y' : 'ieta',
+        #     'name': 'EBOcc', 
+        #     'region' : ['all'],
+        #     # 'region' : ['sevzero_all', 'sevzero_MostlyZeroed',
+        #     #             'sevthree_all', 'sevthree_MostlyZeroed',
+        #     #             'sevfour_all', 'sevfour_MostlyZeroed'
+        #     #            ],
+        #     'axes' : {
+        #         'xaxis': {'label': 'iphi', 'n_or_arr': 80, 'lo': 0, 'hi': 80},
+        #         'yaxis': {'label': 'ieta', 'n_or_arr': 36, 'lo': -18, 'hi': 18}                
+        #     }
+
+        # },          
+
+        # 'realVsEmu': {
+        #     # 'target': { 'x': 'twrADC', 'y' : 'twrEmul3ADC'},
+        #     'target_x' : 'twrEmul3ADC',
+        #     'target_y' : 'twrADC',
+        #     'name': 'realVsEmu', 
+        #     'region': ['sevall_all','sevzero_all', 'sevthree_all', 'sevfour_all'],
+        #     'axes' : {
+        #         # 'xaxis': {'label': 'twrEmul3ADC', 'n_or_arr': 256, 'lo': 0, 'hi': 256},
+        #         # 'yaxis': {'label': 'twrADC', 'n_or_arr': 256, 'lo': 0, 'hi': 256}
+        #         'xaxis': {'label': 'twrEmul3ADC', 'n_or_arr': 133, 'lo': 0, 'hi': 256},
+        #         'yaxis': {'label': 'twrADC', 'n_or_arr': 133, 'lo': 0, 'hi': 256}                
+        #     }
+
+        # },  
+
+    }
+
+    
+
+    time_regions = {
+        "all" : ["1"],
+        "inTime" : ["event.time < 3", "event.time > -3"],
+        "Early" : ["event.time < -3"],
+        "Late" : ["event.time > 3", "event.time < 10"],
+        "VeryLate" : ["event.time > 10"]
+    }
+
+    severities = ["zero", "three", "four"]
+    sevDict = {
+        "zero" : "0",
+        "three" : "3",
+        "four" : "4"
+    }
+    times = ["all", "inTime", "Early", "Late", "VeryLate"]
+
+    selection = {}
+
+    for severity in severities:
+        sevNum = sevDict[severity]
+        for time in times:
+            selec_selections = []
+            selec_selections.append("event.sevlv == %s"%(sevNum))
+            timeSels = time_regions[time]
+            for timeSel in timeSels:
+                selec_selections.append(timeSel)
+            Selection_Name = "sev%s_%s"%(severity, time)
+            # selection[Selection_Name] = copy.copy(selec_selections)
+            selection[Selection_Name] = (selec_selections)
 
     print("selection:",selection)
-    
+
     def weighting(self, event: LazyDataFrame):
         weight = 1.0
         try:
