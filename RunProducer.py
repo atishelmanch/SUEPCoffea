@@ -1,3 +1,9 @@
+"""
+18 August 2021 
+
+The purpose of this module is to run a coffea producer to process root files. 
+"""
+
 import os
 import re
 import pickle 
@@ -7,9 +13,6 @@ import uproot3 as uproot
 import argparse
 from matplotlib.colors import LogNorm
 import time
-
-"""Start singularity"""
-# singularity shell -B ${PWD} -B /afs -B /eos /cvmfs/unpacked.cern.ch/registry.hub.docker.com/coffeateam/coffea-dask:latest
 
 ##-- Single file 
 # python3 condor_SUEP_WS.py --era=2018 --inDir="/afs/cern.ch/work/a/atishelm/private/CMS-ECAL-Trigger-Group/CMSSW_11_3_0/src/ECALDoubleWeights/ETTAnalyzer/SingleFile/" --treename="ETTAnalyzerTree" --outDir="/eos/user/a/atishelm/www/EcalL1Optimization/ZeroBias_singleFile/" --condor="0"
@@ -21,9 +24,8 @@ import time
 # python3 condor_SUEP_WS.py --era=2018 --inDir="/eos/user/a/atishelm/ntuples/EcalL1Optimization/ETTAnalyzer/ZeroBias/ETTAnalyzer_CMSSW_11_3_0/210622_190129/SingleFile/" --treename="ETTAnalyzerTree"
 
 parser = argparse.ArgumentParser("")
-# parser.add_argument('--isMC', type=int, default=1, help="")
 parser.add_argument('--jobNum', type=int, default=1, help="")
-parser.add_argument('--era', type=str, default="2018", help="")
+# parser.add_argument('--era', type=str, default="2018", help="")
 parser.add_argument('--doSyst', type=int, default=1, help="")
 parser.add_argument('--infile', type=str, default="", help="")
 parser.add_argument('--dataset', type=str, default="X", help="")
@@ -37,43 +39,15 @@ options = parser.parse_args()
 
 if(options.condor):
     ##-- Condor
-    from SUEP_Producer import * 
+    from Producer import * 
     from SumWeights import *
 
 else:
     ##-- Locally 
-    from python.SUEP_Producer import *
+    from python.Producer import *
     from python.SumWeights import *
 
-# def inputfile(nanofile):
-#     tested = False
-#     forceaaa = False
-#     pfn = os.popen("edmFileUtil -d %s" % (nanofile)).read()
-#     pfn = re.sub("\n", "", pfn)
-#     print((nanofile, " -> ", pfn))
-#     if (os.getenv("GLIDECLIENT_Group", "") != "overflow" and
-#             os.getenv("GLIDECLIENT_Group", "") != "overflow_conservative" and not
-#             forceaaa):
-#         if not tested:
-#             print("Testing file open")
-#             testfile = uproot.open(pfn)
-#             if testfile:
-#                 print("Test OK")
-#                 nanofile = pfn
-#             else:
-#                 if "root://cms-xrd-global.cern.ch/" not in nanofile:
-#                     nanofile = "root://cms-xrd-global.cern.ch/" + nanofile
-#                 forceaaa = True
-#         else:
-#             nanofile = pfn
-#     else:
-#         if "root://cms-xrd-global.cern.ch/" not in nanofile:
-#             nanofile = "root://cms-xrd-global.cern.ch/" + nanofile
-#     return nanofile
-
-
 options.dataset='QCD'
-
 pre_selection = ""
 
 if float(options.nevt) > 0:
@@ -88,7 +62,7 @@ modules_era = []
 # modules_era.append(SUEP_NTuple(isMC=options.isMC, era=int(options.era), do_syst=1, syst_var='', sample=options.dataset,
 #                          haddFileName="tree_%s.root" % str(options.jobNum)))
 
-modules_era.append(SUEP_NTuple(era=int(options.era), do_syst=1, syst_var='', sample=options.dataset,
+modules_era.append(ETT_NTuple(do_syst=1, syst_var='', sample=options.dataset,
                          haddFileName="tree_%s.root" % str(options.jobNum)))                         
 
 for i in modules_era:
@@ -163,7 +137,8 @@ for instance in modules_era:
         "oneMinusEmuOverRealvstwrADC" : [[1, 256], [0, 1.2]],
         # "oneMinusEmuOverRealvstwrADCCourseBinning" :  [[1, 256], [0, 1.2]] 
         # "oneMinusEmuOverRealvstwrADCCourseBinning" :  [[1, 256], [-1, 1.2]] # 88, 'lo': -1, 'hi': 1.2
-        "oneMinusEmuOverRealvstwrADCCourseBinning" :  [[1, 256], [-2, 1.2]] # 88, 'lo': -1, 'hi': 1.2
+        # "oneMinusEmuOverRealvstwrADCCourseBinning" :  [[1, 256], [-2, 1.2]] # 88, 'lo': -1, 'hi': 1.2
+        "oneMinusEmuOverRealvstwrADCCourseBinning" :  [[1, 256], [-10, 1.2]] # 88, 'lo': -1, 'hi': 1.2
     }
 
     # for h, hist in output[0].items(): ##-- output[0] if savemetrics is on

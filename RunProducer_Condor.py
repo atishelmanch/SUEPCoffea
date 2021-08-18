@@ -1,3 +1,4 @@
+##-- Example command: python RunProducer_Condor.py --tag=
 ##-- example command: python run_SUEPProducer.py --era=2018 --tag=210628_214348
 ##-- example command: python run_SUEPProducer.py --era=2018 --tag=210809_140837
 ##-- Thank you: https://research.cs.wisc.edu/htcondor/manual/v8.5/condor_submit.html
@@ -39,9 +40,7 @@ ls -lR .
 echo "+ PYTHON_PATH = $PYTHON_PATH"
 echo "+ PWD         = $PWD"
 
-python condor_SUEP_WS.py --jobNum=$1 --era={era} --infile=$2 --treename="ETTAnalyzerTree"
-
-#python condor_SUEP_WS.py --jobNum=$1 --isMC=(((ismc))) --era={era} --infile=temp_$1.root
+python RunProducer.py --jobNum=$1 --infile=$2 --treename="ETTAnalyzerTree"
 
 #rm temp_$1.root
 #echo "----- transfer output to eos :"
@@ -92,16 +91,13 @@ queue jobid from {jobdir}/inputfiles.dat
 def main():
     parser = argparse.ArgumentParser(description='Famous Submitter')
     parser.add_argument("-t"   , "--tag"   , type=str, default="Exorcism"  , help="production tag", required=True)
-    # parser.add_argument("-isMC", "--isMC"  , type=int, default=1          , help="")
     parser.add_argument("-q"   , "--queue" , type=str, default="espresso", help="")
-    parser.add_argument("-e"   , "--era"   , type=str, default="2017"     , help="")
     parser.add_argument("-f"   , "--force" , action="store_true"          , help="recreate files and jobs")
     parser.add_argument("-s"   , "--submit", action="store_true"          , help="submit only")
     parser.add_argument("-dry" , "--dryrun", action="store_true"          , help="running without submission")
 
     options = parser.parse_args()
 
-    # indir = "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/ZeroBias_2018_EBOnly_100FilesPerJob/ETTAnalyzer_CMSSW_11_3_0_StripZeroing_EBOnly_100FilesPerJob/{}/".format(options.tag)
     indir = "/eos/cms/store/group/dpg_ecal/alca_ecalcalib/Trigger/DoubleWeights/ZeroBias_2018_EBOnly_FixedOccProportion/ETTAnalyzer_CMSSW_11_3_0_StripZeroing_EBOnly_FixedOccProportion/{}/".format(options.tag)
 
     for sample in os.listdir(indir):
@@ -122,13 +118,11 @@ def main():
             else:
                 logging.warning(" " + jobs_dir + " already exists, forcing its deletion!")
                 shutil.rmtree(jobs_dir)
-                #os.system("rm -rf {}".format(jobs_dir))
                 os.mkdir(jobs_dir)
         else:
             os.mkdir(jobs_dir)
         with open(os.path.join(jobs_dir, "inputfiles.dat"), 'w') as infiles:
             in_files = glob.glob("{indir}/{sample}/*.root".format(sample=sample, indir=indir))
-            # print("in_files:",in_files)
             for name in in_files:
                 infiles.write(name+"\n")
             infiles.close()
@@ -137,16 +131,15 @@ def main():
 
         with open(os.path.join(jobs_dir, "script.sh"), "w") as scriptfile:
             script = script_TEMPLATE.format(
-                era=options.era,
-                outputdir=outdir,
+                outputdir=outdir
             )
             scriptfile.write(script)
             scriptfile.close()
 
         with open(os.path.join(jobs_dir, "condor.sub"), "w") as condorfile:
             allFiles = [
-                "../condor_SUEP_WS.py",
-                "../python/SUEP_Producer.py",
+                "../RunProducer.py",
+                "../python/Producer.py",
                 "../python/SumWeights.py"
             ]
             condor = condor_TEMPLATE.format(

@@ -1,7 +1,8 @@
 """
-WSProducer.py
-Workspace producers using coffea.
+HistProducer.py
+Produce histograms using coffea.
 """
+
 from coffea.hist import Hist, Bin, export1d, plot2d
 from coffea.processor import ProcessorABC, LazyDataFrame, dict_accumulator
 from uproot3 import recreate
@@ -9,19 +10,20 @@ import numpy as np
 import awkward as ak 
 import copy 
 
-class WSProducer(ProcessorABC):
+class HistProducer(ProcessorABC):
     """
-    A coffea Processor which produces a workspace.
-    This applies selections and produces histograms from kinematics.
+    A coffea Processor which produces a histogram
+    This applies selections 
     """
 
     histograms = NotImplemented
     selection = NotImplemented
 
-    def __init__(self, era=2017, sample="DY", do_syst=False, syst_var='', weight_syst=False, haddFileName=None, flag=False):
+    # def __init__(self, era=2017, sample="DY", do_syst=False, syst_var='', weight_syst=False, haddFileName=None, flag=False):
+    def __init__(self, sample="DY", do_syst=False, syst_var='', weight_syst=False, haddFileName=None, flag=False):
         self._flag = flag
         self.do_syst = do_syst
-        self.era = era
+        # self.era = era
         self.sample = sample
         self.syst_var, self.syst_suffix = (syst_var, f'_sys_{syst_var}') if do_syst and syst_var else ('', '')
         self.weight_syst = weight_syst
@@ -45,7 +47,8 @@ class WSProducer(ProcessorABC):
         self.outfile = haddFileName
 
     def __repr__(self):
-        return f'{self.__class__.__name__}(era: {self.era}, sample: {self.sample}, do_syst: {self.do_syst}, syst_var: {self.syst_var}, weight_syst: {self.weight_syst}, output: {self.outfile})'
+        return f'{self.__class__.__name__}(sample: {self.sample}, do_syst: {self.do_syst}, syst_var: {self.syst_var}, weight_syst: {self.weight_syst}, output: {self.outfile})'
+        # return f'{self.__class__.__name__}(era: {self.era}, sample: {self.sample}, do_syst: {self.do_syst}, syst_var: {self.syst_var}, weight_syst: {self.weight_syst}, output: {self.outfile})'
 
     @property
     def accumulator(self):
@@ -114,7 +117,7 @@ class WSProducer(ProcessorABC):
         """Backwards-compatible passbut."""
         return eval('&'.join('(' + cut.format(sys=('' if self.weight_syst else self.syst_suffix)) + ')' for cut in self.selection[cat] ))#if excut not in cut))
 
-class SUEP_NTuple(WSProducer):
+class ETT_NTuple(HistProducer):
 
     SelectionsToRun = []
 
@@ -240,17 +243,13 @@ class SUEP_NTuple(WSProducer):
             'target_y' : 'oneMinusEmuOverRealvstwrADCCourseBinning',
             'name': 'oneMinusEmuOverRealvstwrADCCourseBinning', 
             'region' : SelectionsToRun, 
-            # 'region' : ['sevzero_all'
-            #             # 'sevthree_all', 
-            #             # 'sevfour_all'
-            #            ],
             'axes' : {
                 # 'xaxis': {'label': 'twrADC', 'n_or_arr': 255, 'lo': 1, 'hi': 256}, ## [0.0, 8.0, 16.0, 24.0, 32.0, 40.0, 48.0, 56.0, 64.0, 72.0, 80.0, 88.0, 96.0, 104.0, 112.0, 150.0, 256.0]
-                # 'xaxis': {'label': 'twrADC', 'n_or_arr': np.ndarray([1.0, 8.0, 16.0, 24.0, 32.0, 40.0, 48.0, 56.0, 64.0, 72.0, 80.0, 88.0, 96.0, 104.0, 112.0, 150.0, 256.0]), 'lo': 1, 'hi': 256}, ## [0.0, 8.0, 16.0, 24.0, 32.0, 40.0, 48.0, 56.0, 64.0, 72.0, 80.0, 88.0, 96.0, 104.0, 112.0, 150.0, 256.0]
                 'xaxis': {'label': 'twrADC', 'n_or_arr': [1.0, 8.0, 16.0, 24.0, 32.0, 40.0, 48.0, 56.0, 64.0, 72.0, 80.0, 88.0, 96.0, 104.0, 112.0, 150.0, 256.0], 'lo': 1, 'hi': 256}, ## [0.0, 8.0, 16.0, 24.0, 32.0, 40.0, 48.0, 56.0, 64.0, 72.0, 80.0, 88.0, 96.0, 104.0, 112.0, 150.0, 256.0]
                 # 'yaxis': {'label': 'oneMinusEmuOverRealvstwrADCCourseBinning', 'n_or_arr': 48, 'lo': 0, 'hi': 1.2}                
                 # 'yaxis': {'label': 'oneMinusEmuOverRealvstwrADCCourseBinning', 'n_or_arr': 88, 'lo': -1, 'hi': 1.2}                
-                'yaxis': {'label': 'oneMinusEmuOverRealvstwrADCCourseBinning', 'n_or_arr': 128, 'lo': -2, 'hi': 1.2}                
+                # 'yaxis': {'label': 'oneMinusEmuOverRealvstwrADCCourseBinning', 'n_or_arr': 128, 'lo': -2, 'hi': 1.2}                
+                'yaxis': {'label': 'oneMinusEmuOverRealvstwrADCCourseBinning', 'n_or_arr': 448, 'lo': -10, 'hi': 1.2}    ##-- 0.025 space bins in y axis             
             }
 
         },          
@@ -304,8 +303,6 @@ class SUEP_NTuple(WSProducer):
 
     }
 
-    
-
     time_regions = {
         "all" : ["1"],
         "inTime" : ["event.time < 3", "event.time > -3"],
@@ -333,10 +330,7 @@ class SUEP_NTuple(WSProducer):
             for timeSel in timeSels:
                 selec_selections.append(timeSel)
             Selection_Name = "sev%s_%s"%(severity, time)
-            # selection[Selection_Name] = copy.copy(selec_selections)
             selection[Selection_Name] = (selec_selections)
-
-    print("selection:",selection)
 
     def weighting(self, event: LazyDataFrame):
         weight = 1.0
