@@ -1,4 +1,8 @@
-# Example steps 
+# ETT Coffea
+
+This is a repository originating from [SUEPPhysics](https://github.com/SUEPPhysics/SUEPCoffea), whose purpose is to process CMS ECAL trigger team analyzer output files. 
+
+## Example run steps  
 
 ```
   git clone git@github.com:atishelmanch/ETT_Coffea.git
